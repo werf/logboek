@@ -1,4 +1,4 @@
-package logger
+package logboek
 
 func Init() error {
 	return initTerminalWidth()
