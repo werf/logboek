@@ -160,6 +160,17 @@ func (s *fitterState) generateColorControlSequence() string {
 	return result
 }
 
+func (s *fitterState) addColorControlSequenceCode(newColorCode int) {
+	for i, colorCode := range s.colorControlSequenceCodes {
+		if colorCode == newColorCode {
+			s.colorControlSequenceCodes = append(s.colorControlSequenceCodes[:i], s.colorControlSequenceCodes[i+1:]...)
+			break
+		}
+	}
+
+	s.colorControlSequenceCodes = append(s.colorControlSequenceCodes, newColorCode)
+}
+
 func (s *fitterState) resetColorCodes() {
 	s.colorControlSequenceCodes = []int{}
 }
@@ -342,7 +353,7 @@ func processColorControlSequence(s *fitterState) {
 			s.resetColorCodes()
 			s.isColorLine = false
 		} else {
-			s.colorControlSequenceCodes = append(s.colorControlSequenceCodes, colorCode)
+			s.addColorControlSequenceCode(colorCode)
 			s.isColorLine = true
 		}
 	}
