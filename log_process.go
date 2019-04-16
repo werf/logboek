@@ -101,6 +101,7 @@ type LogProcessStartOptions struct {
 
 type LogProcessEndOptions struct {
 	WithoutLogOptionalLn bool
+	ColorizeMsgFunc      func(...interface{}) string
 }
 
 type LogProcessStepEndOptions struct {
@@ -139,9 +140,10 @@ func LogSecondaryProcess(msg string, options LogProcessOptions, processFunc func
 	return logProcessBase(msg, options, processFunc, colorizeSecondary)
 }
 
-func baseLogProcessStart(msg string, options LogProcessStartOptions, colorizeMsgFunc func(...interface{}) string) {
+func baseLogProcessStart(msg string, options LogProcessStartOptions, defaultColorizeMsgFunc func(...interface{}) string) {
 	applyOptionalLnMode()
 
+	colorizeMsgFunc := defaultColorizeMsgFunc
 	if options.ColorizeMsgFunc != nil {
 		colorizeMsgFunc = options.ColorizeMsgFunc
 	}
@@ -205,8 +207,13 @@ func applyInfoLogProcessStep(userError error, infoSectionFunc func(err error), w
 	_ = infoFunc()
 }
 
-func baseLogProcessEnd(options LogProcessEndOptions, colorizeMsgFunc func(...interface{}) string) {
+func baseLogProcessEnd(options LogProcessEndOptions, defaultColorizeMsgFunc func(...interface{}) string) {
 	popProcessBorder()
+
+	colorizeMsgFunc := defaultColorizeMsgFunc
+	if options.ColorizeMsgFunc != nil {
+		colorizeMsgFunc = options.ColorizeMsgFunc
+	}
 
 	logProcess := activeLogProcesses[len(activeLogProcesses)-1]
 	activeLogProcesses = activeLogProcesses[:len(activeLogProcesses)-1]
@@ -234,8 +241,13 @@ func baseLogProcessEnd(options LogProcessEndOptions, colorizeMsgFunc func(...int
 	}
 }
 
-func baseLogProcessFail(options LogProcessEndOptions, colorizeMsgFunc func(...interface{}) string) {
+func baseLogProcessFail(options LogProcessEndOptions, defaultColorizeMsgFunc func(...interface{}) string) {
 	popProcessBorder()
+
+	colorizeMsgFunc := defaultColorizeMsgFunc
+	if options.ColorizeMsgFunc != nil {
+		colorizeMsgFunc = options.ColorizeMsgFunc
+	}
 
 	logProcess := activeLogProcesses[len(activeLogProcesses)-1]
 	activeLogProcesses = activeLogProcesses[:len(activeLogProcesses)-1]
@@ -283,11 +295,11 @@ func logProcessBase(msg string, options LogProcessOptions, processFunc func() er
 	}
 
 	if err != nil {
-		baseLogProcessFail(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn}, colorizeMsgFunc)
+		baseLogProcessFail(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc}, colorizeMsgFunc)
 		return err
 	}
 
-	baseLogProcessEnd(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn}, colorizeMsgFunc)
+	baseLogProcessEnd(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc}, colorizeMsgFunc)
 	return nil
 }
 
