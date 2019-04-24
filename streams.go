@@ -23,15 +23,15 @@ type WriterProxy struct {
 
 func (p WriterProxy) Write(data []byte) (int, error) {
 	if isRawStreamsOutputModeOn {
-		return logF(p.Writer, "%s", string(data))
+		return logFBase(p.Writer, "%s", string(data))
 	}
 
 	msg := string(data)
 	if isFittedStreamsOutputModeOn {
-		msg, streamsFitterState = fitText(msg, streamsFitterState, TerminalContentWidth(), true, true)
+		msg, streamsFitterState = fitText(msg, streamsFitterState, ContentWidth(), true, true)
 	}
 
-	_, err := FormattedLogF(p.Writer, "%s", msg)
+	_, err := processAndLogFBase(p.Writer, "%s", msg)
 	return len(data), err
 }
 
@@ -103,10 +103,10 @@ func UnmuteErr() {
 	errStream = os.Stderr
 }
 
-func OutF(format string, a ...interface{}) {
-	fmt.Fprintf(GetOutStream(), format, a...)
+func OutF(format string, a ...interface{}) (int, error) {
+	return fmt.Fprintf(GetOutStream(), format, a...)
 }
 
-func ErrF(format string, a ...interface{}) {
-	fmt.Fprintf(GetErrStream(), format, a...)
+func ErrF(format string, a ...interface{}) (int, error) {
+	return fmt.Fprintf(GetErrStream(), format, a...)
 }

@@ -3,11 +3,11 @@ package logboek
 import "fmt"
 
 func LogLn(a ...interface{}) {
-	loggerFormattedLogLn(outStream, a...)
+	LogF("%s", fmt.Sprintln(a...))
 }
 
 func LogF(format string, a ...interface{}) {
-	loggerFormattedLogF(outStream, format, a...)
+	colorizeFormatAndLogF(outStream, ColorizeBase, format, a...)
 }
 
 func LogHighlightLn(a ...interface{}) {
@@ -15,15 +15,7 @@ func LogHighlightLn(a ...interface{}) {
 }
 
 func LogHighlightF(format string, a ...interface{}) {
-	colorizeAndFormattedLogF(outStream, colorizeHighlight, format, a...)
-}
-
-func LogServiceLn(a ...interface{}) {
-	LogServiceF("%s", fmt.Sprintln(a...))
-}
-
-func LogServiceF(format string, a ...interface{}) {
-	colorizeAndFormattedLogF(outStream, colorizeSecondary, format, a...)
+	colorizeFormatAndLogF(outStream, ColorizeHighlight, format, a...)
 }
 
 func LogInfoLn(a ...interface{}) {
@@ -31,7 +23,7 @@ func LogInfoLn(a ...interface{}) {
 }
 
 func LogInfoF(format string, a ...interface{}) {
-	colorizeAndFormattedLogF(outStream, colorizeInfo, format, a...)
+	colorizeFormatAndLogF(outStream, ColorizeInfo, format, a...)
 }
 
 func LogErrorLn(a ...interface{}) {
@@ -39,5 +31,5 @@ func LogErrorLn(a ...interface{}) {
 }
 
 func LogErrorF(format string, a ...interface{}) {
-	colorizeAndFormattedLogF(errStream, colorizeWarning, format, a...)
+	colorizeFormatAndLogF(errStream, ColorizeWarning, format, a...)
 }
