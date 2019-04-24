@@ -33,7 +33,7 @@ func DisableLogColor() {
 
 //export SetTerminalWidth
 func SetTerminalWidth(width C.int) {
-	logboek.SetTerminalWidth(int(width))
+	logboek.SetWidth(int(width))
 }
 
 //export IndentUp
@@ -48,7 +48,7 @@ func IndentDown() {
 
 //export OptionalLnModeOn
 func OptionalLnModeOn() {
-	logboek.OptionalLnModeOn()
+	logboek.LogOptionalLn()
 }
 
 //export Log
@@ -63,7 +63,7 @@ func LogHighlight(data *C.char) {
 
 //export LogService
 func LogService(data *C.char) {
-	logboek.LogServiceF("%s", C.GoString(data))
+	logboek.LogF("%s", C.GoString(data))
 }
 
 //export LogInfo
@@ -88,7 +88,7 @@ func LogProcessEnd(withoutLogOptionalLn bool) {
 
 //export LogProcessStepEnd
 func LogProcessStepEnd(msg *C.char) {
-	logboek.LogProcessStepEnd(C.GoString(msg))
+	logboek.LogProcessStepEnd(C.GoString(msg), logboek.LogProcessStepEndOptions{})
 }
 
 //export LogProcessFail
@@ -152,12 +152,12 @@ func UnmuteErr() {
 
 //export Out
 func Out(msg *C.char) {
-	logboek.OutF("%s", C.GoString(msg))
+	_, _ = logboek.OutF("%s", C.GoString(msg))
 }
 
 //export Err
 func Err(msg *C.char) {
-	logboek.ErrF("%s", C.GoString(msg))
+	_, _ = logboek.ErrF("%s", C.GoString(msg))
 }
 
 func main() {}

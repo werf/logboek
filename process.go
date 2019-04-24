@@ -44,31 +44,35 @@ func disableLogProcessBorder() {
 	processesBorderBetweenIndentWidth = 0
 }
 
-func LogProcessInline(msg string, processFunc func() error) error {
-	return logProcessInlineBase(msg, processFunc, colorizeHighlight)
+type LogProcessInlineOptions struct {
+	ColorizeMsgFunc func(...interface{}) string
 }
 
-func LogSecondaryProcessInline(msg string, processFunc func() error) error {
-	return logProcessInlineBase(msg, processFunc, colorizeSecondary)
+func LogProcessInline(processMessage string, options LogProcessInlineOptions, processFunc func() error) error {
+	return logProcessInline(processMessage, options, processFunc)
 }
 
-func logProcessInlineBase(processMsg string, processFunc func() error, colorizeProcessMsgFunc func(...interface{}) string) error {
-	processMsg = fmt.Sprintf(logProcessInlineProcessMsgFormat, processMsg)
-	colorizeAndFormattedLogF(outStream, colorizeProcessMsgFunc, "%s", processMsg)
+func logProcessInline(processMessage string, options LogProcessInlineOptions, processFunc func() error) error {
+	if options.ColorizeMsgFunc == nil {
+		options.ColorizeMsgFunc = ColorizeBase
+	}
 
-	resultColorize := colorizeProcessMsgFunc
+	processMessage = fmt.Sprintf(logProcessInlineProcessMsgFormat, processMessage)
+	colorizeFormatAndLogF(outStream, options.ColorizeMsgFunc, "%s", processMessage)
+
+	resultColorize := options.ColorizeMsgFunc
 	start := time.Now()
 
 	resultFormat := " (%s)\n"
 
 	var err error
 	if err = WithIndent(processFunc); err != nil {
-		resultColorize = colorizeFail
+		resultColorize = ColorizeFail
 		resultFormat = " (%s) FAILED\n"
 	}
 
 	elapsedSeconds := fmt.Sprintf(logProcessTimeFormat, time.Since(start).Seconds())
-	colorizeAndFormattedLogF(outStream, resultColorize, resultFormat, elapsedSeconds)
+	colorizeFormatAndLogF(outStream, resultColorize, resultFormat, elapsedSeconds)
 
 	return err
 }
@@ -76,7 +80,7 @@ func logProcessInlineBase(processMsg string, processFunc func() error, colorizeP
 func prepareLogProcessMsgLeftPart(leftPart string, colorizeFunc func(...interface{}) string, rightParts ...string) string {
 	var result string
 
-	spaceWidth := TerminalContentWidth() - len(strings.Join(rightParts, logStateRightPartsSeparator))
+	spaceWidth := ContentWidth() - len(strings.Join(rightParts, logStateRightPartsSeparator))
 	if spaceWidth > 0 {
 		if spaceWidth > len(leftPart) {
 			result = leftPart
@@ -107,6 +111,7 @@ type LogProcessEndOptions struct {
 type LogProcessStepEndOptions struct {
 	WithIndent      bool
 	InfoSectionFunc func(err error)
+	ColorizeMsgFunc func(...interface{}) string
 }
 
 type LogProcessOptions struct {
@@ -116,73 +121,104 @@ type LogProcessOptions struct {
 	ColorizeMsgFunc      func(...interface{}) string
 }
 
-func LogProcessStart(msg string, options LogProcessStartOptions) {
-	baseLogProcessStart(msg, options, colorizeHighlight)
+func LogProcessStart(processMessage string, options LogProcessStartOptions) {
+	logProcessStart(processMessage, options)
 }
 
 func LogProcessEnd(options LogProcessEndOptions) {
-	baseLogProcessEnd(options, colorizeHighlight)
+	logProcessEnd(options)
 }
 
-func LogProcessStepEnd(msg string) {
-	baseLogProcessStepEnd(msg, colorizeHighlight)
+func LogProcessStepEnd(processMessage string, options LogProcessStepEndOptions) {
+	logProcessStepEnd(processMessage, options)
 }
 
 func LogProcessFail(options LogProcessEndOptions) {
-	baseLogProcessFail(options, colorizeHighlight)
+	logProcessFail(options)
 }
 
-func LogProcess(msg string, options LogProcessOptions, processFunc func() error) error {
-	return logProcessBase(msg, options, processFunc, colorizeHighlight)
+func LogProcess(processMessage string, options LogProcessOptions, processFunc func() error) error {
+	return logProcess(processMessage, options, processFunc)
 }
 
-func LogSecondaryProcess(msg string, options LogProcessOptions, processFunc func() error) error {
-	return logProcessBase(msg, options, processFunc, colorizeSecondary)
-}
-
-func baseLogProcessStart(msg string, options LogProcessStartOptions, defaultColorizeMsgFunc func(...interface{}) string) {
-	applyOptionalLnMode()
-
-	colorizeMsgFunc := defaultColorizeMsgFunc
-	if options.ColorizeMsgFunc != nil {
-		colorizeMsgFunc = options.ColorizeMsgFunc
+func logProcess(processMessage string, options LogProcessOptions, processFunc func() error) error {
+	if options.ColorizeMsgFunc == nil {
+		options.ColorizeMsgFunc = ColorizeBase
 	}
+
+	logProcessStart(processMessage, LogProcessStartOptions{ColorizeMsgFunc: options.ColorizeMsgFunc})
+
+	bodyFunc := func() error {
+		return processFunc()
+	}
+
+	if options.WithIndent {
+		bodyFunc = decorateByWithIndent(bodyFunc)
+	}
+
+	err := bodyFunc()
+
+	resetOptionalLnMode()
+
+	if options.InfoSectionFunc != nil {
+		applyInfoLogProcessStep(err, options.InfoSectionFunc, options.WithIndent, options.ColorizeMsgFunc)
+	}
+
+	if err != nil {
+		logProcessFail(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc})
+		return err
+	}
+
+	logProcessEnd(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc})
+	return nil
+}
+
+func logProcessStart(processMessage string, options LogProcessStartOptions) {
+	if options.ColorizeMsgFunc == nil {
+		options.ColorizeMsgFunc = ColorizeBase
+	}
+
+	applyOptionalLnMode()
 
 	headerFunc := func() error {
 		return WithoutIndent(func() error {
-			loggerFormattedLogLn(outStream, prepareLogProcessMsgLeftPart(msg, colorizeMsgFunc))
+			processAndLogLn(outStream, prepareLogProcessMsgLeftPart(processMessage, options.ColorizeMsgFunc))
 			return nil
 		})
 	}
 
-	headerFunc = decorateByWithExtraProcessBorder(logProcessDownAndRightBorderSign, colorizeMsgFunc, headerFunc)
+	headerFunc = decorateByWithExtraProcessBorder(logProcessDownAndRightBorderSign, options.ColorizeMsgFunc, headerFunc)
 
 	_ = headerFunc()
 
-	appendProcessBorder(logProcessVerticalBorderSign, colorizeMsgFunc)
+	appendProcessBorder(logProcessVerticalBorderSign, options.ColorizeMsgFunc)
 
-	logProcess := &logProcessDescriptor{StartedAt: time.Now(), Msg: msg}
+	logProcess := &logProcessDescriptor{StartedAt: time.Now(), Msg: processMessage}
 	activeLogProcesses = append(activeLogProcesses, logProcess)
 }
 
-func baseLogProcessStepEnd(msg string, colorizeMsgFunc func(...interface{}) string) {
-	msgFunc := func() error {
+func logProcessStepEnd(processMessage string, options LogProcessStepEndOptions) {
+	if options.ColorizeMsgFunc == nil {
+		options.ColorizeMsgFunc = ColorizeBase
+	}
+
+	processMessageFunc := func() error {
 		return WithoutIndent(func() error {
-			loggerFormattedLogLn(outStream, prepareLogProcessMsgLeftPart(msg, colorizeMsgFunc))
+			processAndLogLn(outStream, prepareLogProcessMsgLeftPart(processMessage, options.ColorizeMsgFunc))
 			return nil
 		})
 	}
 
-	msgFunc = decorateByWithExtraProcessBorder(logProcessVerticalAndRightBorderSign, colorizeMsgFunc, msgFunc)
-	msgFunc = decorateByWithoutLastProcessBorder(msgFunc)
+	processMessageFunc = decorateByWithExtraProcessBorder(logProcessVerticalAndRightBorderSign, options.ColorizeMsgFunc, processMessageFunc)
+	processMessageFunc = decorateByWithoutLastProcessBorder(processMessageFunc)
 
-	_ = msgFunc()
+	_ = processMessageFunc()
 }
 
 func applyInfoLogProcessStep(userError error, infoSectionFunc func(err error), withIndent bool, colorizeMsgFunc func(...interface{}) string) {
 	infoHeaderFunc := func() error {
 		return WithoutIndent(func() error {
-			loggerFormattedLogLn(outStream, prepareLogProcessMsgLeftPart("Info", colorizeMsgFunc))
+			processAndLogLn(outStream, prepareLogProcessMsgLeftPart("Info", colorizeMsgFunc))
 			return nil
 		})
 	}
@@ -207,13 +243,12 @@ func applyInfoLogProcessStep(userError error, infoSectionFunc func(err error), w
 	_ = infoFunc()
 }
 
-func baseLogProcessEnd(options LogProcessEndOptions, defaultColorizeMsgFunc func(...interface{}) string) {
-	popProcessBorder()
-
-	colorizeMsgFunc := defaultColorizeMsgFunc
-	if options.ColorizeMsgFunc != nil {
-		colorizeMsgFunc = options.ColorizeMsgFunc
+func logProcessEnd(options LogProcessEndOptions) {
+	if options.ColorizeMsgFunc == nil {
+		options.ColorizeMsgFunc = ColorizeBase
 	}
+
+	popProcessBorder()
 
 	logProcess := activeLogProcesses[len(activeLogProcesses)-1]
 	activeLogProcesses = activeLogProcesses[:len(activeLogProcesses)-1]
@@ -225,29 +260,28 @@ func baseLogProcessEnd(options LogProcessEndOptions, defaultColorizeMsgFunc func
 	footerFunc := func() error {
 		return WithoutIndent(func() error {
 			timePart := fmt.Sprintf(" (%s)", elapsedSeconds)
-			loggerFormattedLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, colorizeMsgFunc, timePart))
-			colorizeAndFormattedLogF(outStream, colorizeMsgFunc, "%s\n", timePart)
+			processAndLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, options.ColorizeMsgFunc, timePart))
+			colorizeFormatAndLogF(outStream, options.ColorizeMsgFunc, "%s\n", timePart)
 
 			return nil
 		})
 	}
 
-	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, colorizeMsgFunc, footerFunc)
+	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, options.ColorizeMsgFunc, footerFunc)
 
 	_ = footerFunc()
 
 	if !options.WithoutLogOptionalLn {
-		OptionalLnModeOn()
+		LogOptionalLn()
 	}
 }
 
-func baseLogProcessFail(options LogProcessEndOptions, defaultColorizeMsgFunc func(...interface{}) string) {
-	popProcessBorder()
-
-	colorizeMsgFunc := defaultColorizeMsgFunc
-	if options.ColorizeMsgFunc != nil {
-		colorizeMsgFunc = options.ColorizeMsgFunc
+func logProcessFail(options LogProcessEndOptions) {
+	if options.ColorizeMsgFunc == nil {
+		options.ColorizeMsgFunc = ColorizeBase
 	}
+
+	popProcessBorder()
 
 	logProcess := activeLogProcesses[len(activeLogProcesses)-1]
 	activeLogProcesses = activeLogProcesses[:len(activeLogProcesses)-1]
@@ -259,48 +293,20 @@ func baseLogProcessFail(options LogProcessEndOptions, defaultColorizeMsgFunc fun
 	footerFunc := func() error {
 		return WithoutIndent(func() error {
 			timePart := fmt.Sprintf(" (%s) FAILED", elapsedSeconds)
-			loggerFormattedLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, colorizeFail, timePart))
-			colorizeAndFormattedLogF(outStream, colorizeFail, "%s\n", timePart)
+			processAndLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, ColorizeFail, timePart))
+			colorizeFormatAndLogF(outStream, ColorizeFail, "%s\n", timePart)
 
 			return nil
 		})
 	}
 
-	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, colorizeMsgFunc, footerFunc)
+	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, options.ColorizeMsgFunc, footerFunc)
 
 	_ = footerFunc()
 
 	if !options.WithoutLogOptionalLn {
-		OptionalLnModeOn()
+		LogOptionalLn()
 	}
-}
-
-func logProcessBase(msg string, options LogProcessOptions, processFunc func() error, colorizeMsgFunc func(...interface{}) string) error {
-	baseLogProcessStart(msg, LogProcessStartOptions{ColorizeMsgFunc: options.ColorizeMsgFunc}, colorizeMsgFunc)
-
-	bodyFunc := func() error {
-		return processFunc()
-	}
-
-	if options.WithIndent {
-		bodyFunc = decorateByWithIndent(bodyFunc)
-	}
-
-	err := bodyFunc()
-
-	resetOptionalLnMode()
-
-	if options.InfoSectionFunc != nil {
-		applyInfoLogProcessStep(err, options.InfoSectionFunc, options.WithIndent, colorizeMsgFunc)
-	}
-
-	if err != nil {
-		baseLogProcessFail(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc}, colorizeMsgFunc)
-		return err
-	}
-
-	baseLogProcessEnd(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc}, colorizeMsgFunc)
-	return nil
 }
 
 func decorateByWithExtraProcessBorder(colorlessBorder string, colorizeFunc func(...interface{}) string, decoratedFunc func() error) func() error {

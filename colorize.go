@@ -9,24 +9,39 @@ import (
 )
 
 var (
+	noneFormat []color.Attribute
+
+	baseFormat = noneFormat
+
 	highlightFormat = []color.Attribute{color.Bold}
-	secondaryFormat []color.Attribute
 	infoFormat      = []color.Attribute{color.FgHiBlue}
 	warningFormat   = []color.Attribute{color.FgRed, color.Bold}
 
-	failFormat    = warningFormat
 	successFormat = []color.Attribute{color.FgGreen, color.Bold}
+	failFormat    = warningFormat
 )
 
-func EnableLogColor() {
-	color.NoColor = false
+func SetBaseFormat(attributes []color.Attribute) {
+	baseFormat = attributes
 }
 
-func DisableLogColor() {
-	color.NoColor = true
+func SetHighlightFormat(attributes []color.Attribute) {
+	highlightFormat = attributes
 }
 
-func colorizeAndFormattedLogF(w io.Writer, colorizeFunc func(...interface{}) string, format string, args ...interface{}) {
+func SetInfoFormat(attributes []color.Attribute) {
+	infoFormat = attributes
+}
+
+func SetWarningFormat(attributes []color.Attribute) {
+	warningFormat = attributes
+}
+
+func SetFailFormat(attributes []color.Attribute) {
+	failFormat = attributes
+}
+
+func colorizeFormatAndLogF(w io.Writer, colorizeFunc func(...interface{}) string, format string, args ...interface{}) {
 	var msg string
 	if len(args) > 0 {
 		msg = colorizeBaseF(colorizeFunc, format, args...)
@@ -34,7 +49,7 @@ func colorizeAndFormattedLogF(w io.Writer, colorizeFunc func(...interface{}) str
 		msg = colorizeBaseF(colorizeFunc, "%s", format)
 	}
 
-	loggerFormattedLogF(w, msg)
+	processAndLogF(w, msg)
 }
 
 func colorizeBaseF(colorizeFunc func(...interface{}) string, format string, args ...interface{}) string {
@@ -51,28 +66,32 @@ func colorizeBaseF(colorizeFunc func(...interface{}) string, format string, args
 	return strings.Join(colorizeLines, "\n")
 }
 
-func colorizeFail(a ...interface{}) string {
-	return colorize(failFormat, a...)
+func ColorizeNone(a ...interface{}) string {
+	return colorize(noneFormat, a...)
 }
 
-func colorizeSuccess(a ...interface{}) string {
-	return colorize(successFormat, a...)
+func ColorizeBase(a ...interface{}) string {
+	return colorize(baseFormat, a...)
 }
 
-func colorizeHighlight(a ...interface{}) string {
+func ColorizeHighlight(a ...interface{}) string {
 	return colorize(highlightFormat, a...)
 }
 
-func colorizeSecondary(a ...interface{}) string {
-	return colorize(secondaryFormat, a...)
-}
-
-func colorizeInfo(a ...interface{}) string {
+func ColorizeInfo(a ...interface{}) string {
 	return colorize(infoFormat, a...)
 }
 
-func colorizeWarning(a ...interface{}) string {
+func ColorizeWarning(a ...interface{}) string {
 	return colorize(warningFormat, a...)
+}
+
+func ColorizeSuccess(a ...interface{}) string {
+	return colorize(successFormat, a...)
+}
+
+func ColorizeFail(a ...interface{}) string {
+	return colorize(failFormat, a...)
 }
 
 func colorize(attributes []color.Attribute, a ...interface{}) string {
