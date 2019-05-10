@@ -204,7 +204,7 @@ func logProcess(processMessage string, options LogProcessOptions, processFunc fu
 		applyInfoLogProcessStep(err, options.InfoSectionFunc, options.WithIndent, options.ColorizeMsgFunc)
 	}
 
-	if options.SuccessInfoSectionFunc != nil && err != nil {
+	if options.SuccessInfoSectionFunc != nil && err == nil {
 		infoSectionFunc := func(_ error) {
 			options.SuccessInfoSectionFunc()
 		}
