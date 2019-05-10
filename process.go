@@ -44,6 +44,45 @@ func disableLogProcessBorder() {
 	processesBorderBetweenIndentWidth = 0
 }
 
+type LogBlockOptions struct {
+	WithIndent           bool
+	WithoutLogOptionalLn bool
+	ColorizeMsgFunc      func(...interface{}) string
+}
+
+func LogBlock(blockMessage string, options LogBlockOptions, blockFunc func()) {
+	if options.ColorizeMsgFunc == nil {
+		options.ColorizeMsgFunc = ColorizeBase
+	}
+
+	titleFunc := func() error {
+		processAndLogLn(outStream, blockMessage)
+		return nil
+	}
+
+	applyOptionalLnMode()
+
+	bodyFunc := func() error {
+		blockFunc()
+		return nil
+	}
+
+	if options.WithIndent {
+		bodyFunc = decorateByWithIndent(bodyFunc)
+	}
+
+	_ = decorateByWithExtraProcessBorder(logProcessDownAndRightBorderSign, options.ColorizeMsgFunc, titleFunc)()
+	_ = decorateByWithExtraProcessBorder(logProcessVerticalBorderSign, options.ColorizeMsgFunc, bodyFunc)()
+
+	resetOptionalLnMode()
+
+	_ = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, options.ColorizeMsgFunc, titleFunc)()
+
+	if !options.WithoutLogOptionalLn {
+		LogOptionalLn()
+	}
+}
+
 type LogProcessInlineOptions struct {
 	ColorizeMsgFunc func(...interface{}) string
 }
