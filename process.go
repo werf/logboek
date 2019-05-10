@@ -154,10 +154,11 @@ type LogProcessStepEndOptions struct {
 }
 
 type LogProcessOptions struct {
-	WithIndent           bool
-	WithoutLogOptionalLn bool
-	InfoSectionFunc      func(err error)
-	ColorizeMsgFunc      func(...interface{}) string
+	WithIndent             bool
+	WithoutLogOptionalLn   bool
+	InfoSectionFunc        func(err error)
+	SuccessInfoSectionFunc func()
+	ColorizeMsgFunc        func(...interface{}) string
 }
 
 func LogProcessStart(processMessage string, options LogProcessStartOptions) {
@@ -201,6 +202,14 @@ func logProcess(processMessage string, options LogProcessOptions, processFunc fu
 
 	if options.InfoSectionFunc != nil {
 		applyInfoLogProcessStep(err, options.InfoSectionFunc, options.WithIndent, options.ColorizeMsgFunc)
+	}
+
+	if options.SuccessInfoSectionFunc != nil && err != nil {
+		infoSectionFunc := func(_ error) {
+			options.SuccessInfoSectionFunc()
+		}
+
+		applyInfoLogProcessStep(err, infoSectionFunc, options.WithIndent, options.ColorizeMsgFunc)
 	}
 
 	if err != nil {
