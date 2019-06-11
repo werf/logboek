@@ -27,10 +27,24 @@ type fitterState struct {
 }
 
 type wrapperState struct {
-	line       string
-	word       string
-	lineTWidth int
-	wordTWidth int
+	lineSequenceStack sequenceStack
+	wordSequenceStack sequenceStack
+}
+
+func (ws *wrapperState) ResetLineSequences() {
+	ws.lineSequenceStack = newSequenceStack()
+}
+
+func (ws *wrapperState) ResetWordSequences() {
+	ws.wordSequenceStack = newSequenceStack()
+}
+
+func (ws *wrapperState) String() string {
+	return ws.lineSequenceStack.String() + ws.wordSequenceStack.String()
+}
+
+func (ws *wrapperState) TWidth() int {
+	return ws.lineSequenceStack.TWidth() + ws.wordSequenceStack.TWidth()
 }
 
 type controlSequenceState struct {
@@ -44,45 +58,48 @@ type colorState struct {
 	colorControlSequenceCodes []int
 }
 
-func (s *fitterState) lineAppend(value string, tWidth int) {
-	s.line += value
-	s.lineTWidth += tWidth
-}
+func stripLongSequenceString(sequenceStack sequenceStack, contentWidth int, markLines, markLastLine bool) string {
+	var result string
 
-func (s *fitterState) wordAppend(value string, tWidth int) {
-	s.word += value
-	s.wordTWidth += tWidth
-}
-
-func (s *fitterState) lineWithWord() string {
-	return s.line + s.word
-}
-
-func (s *fitterState) lineWithWordTWidth() int {
-	return s.lineTWidth + s.wordTWidth
-}
-
-func (s *fitterState) lineReset() {
-	s.line = ""
-	s.lineTWidth = 0
-}
-
-func (s *fitterState) wordReset() {
-	s.word = ""
-	s.wordTWidth = 0
-}
-
-func (s *fitterState) filledLine(contentWidth int, markWrappedLine bool) string {
-	if markWrappedLine {
-		var padding int
-		if s.lineTWidth <= contentWidthWithoutMarkSign(contentWidth, markWrappedLine) {
-			padding = contentWidth - s.lineTWidth - 1
-		}
-
-		return s.line + strings.Repeat(" ", padding) + "↵"
+	var sliceTWidth int
+	if markLines {
+		sliceTWidth = contentWidth - 2
 	} else {
-		return s.line
+		sliceTWidth = contentWidth
 	}
+
+	slices, rest := sequenceStack.Slices(sliceTWidth)
+
+	if len(slices) == 0 {
+		return result
+	} else if len(slices) > 1 {
+		for _, slice := range slices[:len(slices)-1] {
+			if markLines {
+				result += markLine(slice, sliceTWidth, contentWidth)
+			} else {
+				result += slice
+			}
+			result += "\n"
+		}
+	}
+
+	lastSlice := slices[len(slices)-1]
+	if markLines && markLastLine {
+		result += markLine(lastSlice, sliceTWidth-rest, contentWidth)
+	} else {
+		result += lastSlice
+	}
+
+	return result
+}
+
+func markLine(line string, twidth, contentWidth int) string {
+	var padding int
+	if twidth <= contentWidthWithoutMarkSign(contentWidth, true) {
+		padding = contentWidth - twidth - 1
+	}
+
+	return line + strings.Repeat(" ", padding) + "↵"
 }
 
 func (s *fitterState) parseColorCodes() []int {
@@ -170,59 +187,71 @@ func runFitterWrapper(r rune, s *fitterState, contentWidth int, markWrappedLine 
 
 	switch string(r) {
 	case "\b":
-		if s.wordTWidth != 0 {
-			s.wordTWidth -= 1
-			s.wordAppend("\b", 0)
-		} else if s.lineTWidth != 0 {
-			s.lineTWidth -= 1
-			s.lineAppend("\b", 0)
+		if !s.wordSequenceStack.IsEmpty() {
+			s.wordSequenceStack.WriteControlData(string(r))
+		} else {
+			s.lineSequenceStack.WriteControlData(string(r))
 		}
 	case "\n", "\r":
 		carriage := string(r)
 
-		if s.lineWithWordTWidth() <= contentWidth {
-			result += s.lineWithWord()
-		} else if s.lineWithWordTWidth() > contentWidth {
-			result += s.filledLine(contentWidth, markWrappedLine)
+		if s.wrapperState.TWidth() <= contentWidth {
+			result += s.wrapperState.String()
+		} else if s.wrapperState.TWidth() > contentWidth {
+			result += stripLongSequenceString(s.lineSequenceStack, contentWidth, markWrappedLine, true)
 			result += "\n"
-			result += s.word
+			result += stripLongSequenceString(s.wordSequenceStack, contentWidth, markWrappedLine, false)
 		}
 
 		result += carriage
 
-		s.lineReset()
-		s.wordReset()
+		s.ResetLineSequences()
+		s.ResetWordSequences()
 	case " ":
 		space := string(r)
 		spaceTWidth := len(space)
 
-		if s.lineWithWordTWidth()+spaceTWidth > contentWidthWithoutMarkSign(contentWidth, markWrappedLine) {
-			result += s.filledLine(contentWidth, markWrappedLine)
+		if s.wrapperState.TWidth()+spaceTWidth > contentWidthWithoutMarkSign(contentWidth, markWrappedLine) {
+			result += stripLongSequenceString(s.lineSequenceStack, contentWidth, markWrappedLine, true)
 			result += "\n"
 
-			s.lineReset()
+			s.wrapperState.ResetLineSequences()
 		}
 
-		s.lineAppend(s.word+space, s.wordTWidth+spaceTWidth)
-		s.wordReset()
+		s.lineSequenceStack.Merge(s.wordSequenceStack)
+		s.lineSequenceStack.WritePlainData(space)
+
+		s.ResetWordSequences()
 	default:
-		s.wordAppend(string(r), 1)
+		s.wordSequenceStack.WriteData(string(r))
 	}
 
 	return result
 }
 
 func ignoreControlSequenceTWidth(r rune, s *fitterState) {
-	processFitterControlSequence(r, s, nil)
+	processControlSequenceFunc := func(s *fitterState, _ string) {
+		s.wordSequenceStack.CommitTopSequenceAsControl()
+	}
+
+	processEscapeSequenceCodeFunc := func(s *fitterState) {
+		s.wordSequenceStack.DivideListSign()
+	}
+
+	processFitterControlSequence(r, s, processEscapeSequenceCodeFunc, processControlSequenceFunc)
 }
 
-func processFitterControlSequence(r rune, s *fitterState, processColorControlSequenceFunc func(f *fitterState)) {
+func processFitterControlSequence(r rune, s *fitterState, processEscapeSequenceCodeFunc func(f *fitterState), processControlSequenceFunc func(f *fitterState, code string)) {
 	switch s.controlSequenceCursorState {
 	case isControlSequenceNoneProcessed:
 		switch r {
 		case escapeSequenceCode:
 			s.controlSequenceBytes = []rune{r}
 			s.controlSequenceCursorState = isControlSequenceEscapeSequenceProcessed
+
+			if processEscapeSequenceCodeFunc != nil {
+				processEscapeSequenceCodeFunc(s)
+			}
 		}
 	case isControlSequenceEscapeSequenceProcessed:
 		switch string(r) {
@@ -237,14 +266,9 @@ func processFitterControlSequence(r rune, s *fitterState, processColorControlSeq
 		} else {
 			if unicode.IsLetter(r) {
 				s.controlSequenceBytes = append(s.controlSequenceBytes, r)
-				if s.wordTWidth-len(s.controlSequenceBytes) >= 0 {
-					s.wordTWidth -= len(s.controlSequenceBytes)
-				} else {
-					s.wordTWidth = 0
-				}
 
-				if string(r) == "m" && processColorControlSequenceFunc != nil {
-					processColorControlSequenceFunc(s)
+				if processControlSequenceFunc != nil {
+					processControlSequenceFunc(s, string(r))
 				}
 			}
 
@@ -258,24 +282,24 @@ func processFitterControlSequence(r rune, s *fitterState, processColorControlSeq
 func processFitterCachedLineAndWord(s *fitterState, contentWidth int, markWrappedLine bool) string {
 	var result string
 
-	if s.lineWithWordTWidth() > contentWidthWithoutMarkSign(contentWidth, markWrappedLine) {
-		if s.line != "" {
-			result += s.filledLine(contentWidth, markWrappedLine)
+	if s.wrapperState.TWidth() > contentWidthWithoutMarkSign(contentWidth, markWrappedLine) {
+		if s.lineSequenceStack.String() != "" {
+			result += stripLongSequenceString(s.lineSequenceStack, contentWidth, markWrappedLine, true)
 
-			if s.word != "" {
+			if s.wordSequenceStack.String() != "" {
 				result += "\n"
-				result += s.word
+				result += stripLongSequenceString(s.wordSequenceStack, contentWidth, markWrappedLine, false)
 
-				s.lineReset()
-				s.wordReset()
+				s.ResetLineSequences()
+				s.ResetWordSequences()
 			}
-		} else if s.word != "" {
-			result += s.word
+		} else if s.wordSequenceStack.String() != "" {
+			result += stripLongSequenceString(s.wordSequenceStack, contentWidth, markWrappedLine, false)
 
-			s.wordReset()
+			s.ResetWordSequences()
 		}
 	} else {
-		result += s.lineWithWord()
+		result += s.wrapperState.String()
 	}
 
 	return result
@@ -305,7 +329,14 @@ func addRequiredColorControlSequences(fittedText string, s *fitterState) string 
 		}
 
 		s.prevCursorRune = r
-		processFitterControlSequence(r, s, processColorControlSequence)
+
+		processControlSequenceFunc := func(s *fitterState, code string) {
+			if string(r) == "m" {
+				processColorControlSequence(s)
+			}
+		}
+
+		processFitterControlSequence(r, s, nil, processControlSequenceFunc)
 	}
 
 	return result
