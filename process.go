@@ -9,8 +9,7 @@ import (
 const (
 	logProcessTimeFormat = "%.2f seconds"
 
-	logProcessInlineProcessMsgFormat = "%s ..."
-	logStateRightPartsSeparator      = " "
+	logStateRightPartsSeparator = " "
 )
 
 var (
@@ -96,7 +95,13 @@ func logProcessInline(processMessage string, options LogProcessInlineOptions, pr
 		options.ColorizeMsgFunc = ColorizeBase
 	}
 
-	processMessage = fmt.Sprintf(logProcessInlineProcessMsgFormat, processMessage)
+	progressDots := "..."
+	maxLength := ContentWidth() - len(" ") - len(progressDots) - len(fmt.Sprintf(logProcessTimeFormat, 1234.0))
+	if len(processMessage) > maxLength {
+		processMessage = processMessage[:maxLength-1]
+	}
+
+	processMessage = processMessage + " " + progressDots
 	colorizeFormatAndLogF(outStream, options.ColorizeMsgFunc, "%s", processMessage)
 
 	resultColorize := options.ColorizeMsgFunc
