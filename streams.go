@@ -11,8 +11,7 @@ var (
 	outStream io.Writer = os.Stdout
 	errStream io.Writer = os.Stderr
 
-	isRawStreamsOutputModeOn    = false
-	isFittedStreamsOutputModeOn = false
+	isRawStreamsOutputModeOn = false
 
 	streamsFitterState fitterState
 )
@@ -22,14 +21,13 @@ type WriterProxy struct {
 }
 
 func (p WriterProxy) Write(data []byte) (int, error) {
+	msg := string(data)
+
 	if isRawStreamsOutputModeOn {
-		return logFBase(p.Writer, "%s", string(data))
+		return logFBase(p.Writer, "%s", msg)
 	}
 
-	msg := string(data)
-	if isFittedStreamsOutputModeOn {
-		msg, streamsFitterState = fitText(msg, streamsFitterState, ContentWidth(), true, true)
-	}
+	msg, streamsFitterState = fitText(msg, streamsFitterState, ContentWidth(), true, true)
 
 	_, err := processAndLogFBase(p.Writer, "%s", msg)
 	return len(data), err
@@ -54,29 +52,6 @@ func RawStreamsOutputModeOn() {
 
 func RawStreamsOutputModeOff() {
 	isRawStreamsOutputModeOn = false
-}
-
-func WithFittedStreamsOutputOn(f func() error) error {
-	savedStreamsFitterState := streamsFitterState
-	savedIsFittedOutputModeOn := isFittedStreamsOutputModeOn
-
-	streamsFitterState = fitterState{}
-	isFittedStreamsOutputModeOn = true
-	err := f()
-	streamsFitterState = savedStreamsFitterState
-	isFittedStreamsOutputModeOn = savedIsFittedOutputModeOn
-
-	return err
-}
-
-func FittedStreamsOutputOn() {
-	streamsFitterState = fitterState{}
-	isFittedStreamsOutputModeOn = true
-}
-
-func FittedStreamsOutputOff() {
-	streamsFitterState = fitterState{}
-	isFittedStreamsOutputModeOn = false
 }
 
 func GetOutStream() io.Writer {
