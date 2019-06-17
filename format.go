@@ -4,17 +4,22 @@ import "strings"
 
 type FitTextOptions struct {
 	ExtraIndentWidth int
+	Width            int
 	MaxWidth         int
 	MarkWrappedLine  bool
 }
 
 func FitText(text string, options FitTextOptions) string {
-	tw := width
 	var lineWidth int
-	if options.MaxWidth != 0 && tw > options.MaxWidth {
-		lineWidth = options.MaxWidth
+	if options.Width != 0 {
+		lineWidth = options.Width
 	} else {
-		lineWidth = tw
+		tw := width
+		if options.MaxWidth != 0 && tw > options.MaxWidth {
+			lineWidth = options.MaxWidth
+		} else {
+			lineWidth = tw
+		}
 	}
 
 	return fitTextWithIndent(text, lineWidth, options.ExtraIndentWidth, options.MarkWrappedLine)
