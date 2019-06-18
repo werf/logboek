@@ -68,6 +68,10 @@ func stripLongSequenceString(sequenceStack sequenceStack, contentWidth int, mark
 		sliceTWidth = contentWidth
 	}
 
+	if sliceTWidth < 1 {
+		sliceTWidth = 1
+	}
+
 	slices, rest := sequenceStack.Slices(sliceTWidth)
 
 	if len(slices) == 0 {
