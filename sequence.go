@@ -189,21 +189,25 @@ func (ss *sequenceStack) Slice(sliceTWidth int) (string, int) {
 	var result string
 	var newSequences []*sequence
 
-	for _, s := range ss.sequences {
-		if sliceTWidth == 0 {
-			newSequences = append(newSequences, s)
-		} else if s.TWidth() == 0 {
+	for ind, s := range ss.sequences {
+		if s.TWidth() == 0 {
 			result += s.String()
+			continue
+		}
+
+		if sliceTWidth == 0 {
+			newSequences = append(newSequences, ss.sequences[ind:]...)
+			break
 		} else {
 			var part string
 			part, sliceTWidth = s.Slice(sliceTWidth)
 			result += part
 
 			if !s.IsEmpty() {
-				newSequences = append(newSequences, s)
+				newSequences = append(newSequences, ss.sequences[ind:]...)
+				break
 			}
 		}
-
 	}
 
 	ss.sequences = newSequences

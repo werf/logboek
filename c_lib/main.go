@@ -120,16 +120,6 @@ func RawStreamsOutputModeOff() {
 	logboek.RawStreamsOutputModeOff()
 }
 
-//export FittedStreamsOutputOn
-func FittedStreamsOutputOn() {
-	logboek.FittedStreamsOutputOn()
-}
-
-//export FittedStreamsOutputOff
-func FittedStreamsOutputOff() {
-	logboek.FittedStreamsOutputOff()
-}
-
 //export MuteOut
 func MuteOut() {
 	logboek.MuteOut()
