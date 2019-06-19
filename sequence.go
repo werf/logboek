@@ -45,7 +45,7 @@ func (s *sequence) TWidth() int {
 		return 0
 	}
 
-	return len(s.data)
+	return len([]rune(s.data))
 }
 
 func (s *sequence) Slice(maxTWidth int) (string, int) {
