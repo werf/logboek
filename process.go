@@ -149,6 +149,7 @@ type LogProcessStartOptions struct {
 
 type LogProcessEndOptions struct {
 	WithoutLogOptionalLn bool
+	WithoutElapsedTime   bool
 	ColorizeMsgFunc      func(...interface{}) string
 }
 
@@ -161,6 +162,7 @@ type LogProcessStepEndOptions struct {
 type LogProcessOptions struct {
 	WithIndent             bool
 	WithoutLogOptionalLn   bool
+	WithoutElapsedTime     bool
 	InfoSectionFunc        func(err error)
 	SuccessInfoSectionFunc func()
 	ColorizeMsgFunc        func(...interface{}) string
@@ -218,11 +220,11 @@ func logProcess(processMessage string, options LogProcessOptions, processFunc fu
 	}
 
 	if err != nil {
-		logProcessFail(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc})
+		logProcessFail(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, WithoutElapsedTime: options.WithoutElapsedTime, ColorizeMsgFunc: options.ColorizeMsgFunc})
 		return err
 	}
 
-	logProcessEnd(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, ColorizeMsgFunc: options.ColorizeMsgFunc})
+	logProcessEnd(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, WithoutElapsedTime: options.WithoutElapsedTime, ColorizeMsgFunc: options.ColorizeMsgFunc})
 	return nil
 }
 
@@ -312,7 +314,11 @@ func logProcessEnd(options LogProcessEndOptions) {
 
 	footerFunc := func() error {
 		return WithoutIndent(func() error {
-			timePart := fmt.Sprintf(" (%s)", elapsedSeconds)
+			timePart := ""
+			if !options.WithoutElapsedTime {
+				timePart = fmt.Sprintf(" (%s)", elapsedSeconds)
+			}
+
 			processAndLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, options.ColorizeMsgFunc, timePart))
 			colorizeFormatAndLogF(outStream, options.ColorizeMsgFunc, "%s\n", timePart)
 
@@ -345,7 +351,11 @@ func logProcessFail(options LogProcessEndOptions) {
 
 	footerFunc := func() error {
 		return WithoutIndent(func() error {
-			timePart := fmt.Sprintf(" (%s) FAILED", elapsedSeconds)
+			timePart := " FAILED"
+			if !options.WithoutElapsedTime {
+				timePart = fmt.Sprintf(" (%s) FAILED", elapsedSeconds)
+			}
+
 			processAndLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, ColorizeFail, timePart))
 			colorizeFormatAndLogF(outStream, ColorizeFail, "%s\n", timePart)
 
