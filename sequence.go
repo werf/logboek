@@ -1,10 +1,11 @@
 package logboek
 
+import "strings"
+
 type sequenceKind int
 
 const (
-	unknownSequenceKind = iota
-	plainSequenceKind
+	plainSequenceKind = iota
 	controlSequenceKind
 )
 
@@ -16,7 +17,7 @@ type sequence struct {
 func newSequence(data string) *sequence {
 	s := &sequence{}
 	s.data = data
-	s.kind = unknownSequenceKind
+	s.kind = plainSequenceKind
 
 	return s
 }
@@ -26,10 +27,6 @@ func (s *sequence) Append(data string) {
 }
 
 func (s *sequence) SetKind(kind sequenceKind) {
-	if s.kind != unknownSequenceKind {
-		panic("sequence kind already exists")
-	}
-
 	s.kind = kind
 }
 
@@ -114,10 +111,6 @@ func (ss *sequenceStack) commitTopSequence(kind sequenceKind) {
 }
 
 func (ss *sequenceStack) NewSequence(data string) *sequence {
-	if !ss.IsEmpty() && ss.TopSequence().kind == unknownSequenceKind {
-		ss.TopSequence().SetKind(plainSequenceKind)
-	}
-
 	topSequence := newSequence(data)
 	ss.sequences = append(ss.sequences, topSequence)
 
@@ -142,7 +135,7 @@ func (ss *sequenceStack) WriteData(data string) {
 	}
 }
 
-func (ss *sequenceStack) DivideListSign() {
+func (ss *sequenceStack) DivideLastSign() {
 	if len(ss.sequences) == 0 {
 		panic("empty sequence stack")
 	}
@@ -189,18 +182,25 @@ func (ss *sequenceStack) Slice(sliceTWidth int) (string, int) {
 	var result string
 	var newSequences []*sequence
 
+	rest := sliceTWidth
+
 	for ind, s := range ss.sequences {
 		if s.TWidth() == 0 {
 			result += s.String()
 			continue
 		}
 
-		if sliceTWidth == 0 {
+		if rest == 0 {
 			newSequences = append(newSequences, ss.sequences[ind:]...)
 			break
 		} else {
+			if s.TWidth() > rest && s.TWidth() <= sliceTWidth {
+				newSequences = append(newSequences, ss.sequences[ind:]...)
+				break
+			}
+
 			var part string
-			part, sliceTWidth = s.Slice(sliceTWidth)
+			part, rest = s.Slice(rest)
 			result += part
 
 			if !s.IsEmpty() {
@@ -215,7 +215,7 @@ func (ss *sequenceStack) Slice(sliceTWidth int) (string, int) {
 		ss.NewSequence("")
 	}
 
-	return result, sliceTWidth
+	return result, rest
 }
 
 func (ss *sequenceStack) Slices(sliceTWidth int) ([]string, int) {
@@ -227,10 +227,12 @@ func (ss *sequenceStack) Slices(sliceTWidth int) ([]string, int) {
 
 	for {
 		slice, rest := ss.Slice(sliceTWidth)
-		result = append(result, slice)
 
 		if ss.TWidth() == 0 {
+			result = append(result, slice)
 			return result, rest
+		} else {
+			result = append(result, slice+strings.Repeat(" ", rest))
 		}
 	}
 }

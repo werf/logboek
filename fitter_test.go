@@ -41,12 +41,17 @@ func TestFitText_sentence(t *testing.T) {
 		{
 			"bigger",
 			"foo bar data",
-			"foo bar \ndata",
+			"foo bar   \ndata",
 		},
 		{
 			"biggerWithLongWord",
 			"foo bar " + strings.Repeat("l", contentWidth+1),
-			"foo bar \n" + strings.Repeat("l", contentWidth) + "\nl",
+			"foo bar ll\nlllllllll",
+		},
+		{
+			"doubleLongWords",
+			strings.Repeat("l", contentWidth) + " " + strings.Repeat("l", contentWidth+1),
+			"llllllllll\n lllllllll\nll",
 		},
 	})
 
@@ -59,7 +64,7 @@ func TestFitText_sentence(t *testing.T) {
 		{
 			"equal",
 			"foo bar da",
-			"foo bar  ↵\nda",
+			"foo bar da",
 		},
 		{
 			"bigger",
@@ -68,8 +73,13 @@ func TestFitText_sentence(t *testing.T) {
 		},
 		{
 			"biggerWithLongWord",
-			"foo bar " + strings.Repeat("l", contentWidth),
-			"foo bar  ↵\nllllllll ↵\nll",
+			"foo bar " + strings.Repeat("l", contentWidth+1),
+			"foo bar  ↵\nllllllll ↵\nlll",
+		},
+		{
+			"doubleLongWords",
+			strings.Repeat("l", contentWidth) + " " + strings.Repeat("l", contentWidth+1),
+			"llllllll ↵\nll lllll ↵\nllllll",
 		},
 	})
 }
@@ -125,12 +135,12 @@ func TestFitText_word(t *testing.T) {
 		{
 			"equal",
 			strings.Repeat("1", contentWidth),
-			"11111111 ↵\n11",
+			"1111111111",
 		},
 		{
 			"color_equal",
 			"\x1b[30m" + strings.Repeat("1", contentWidth) + "\x1b[0m",
-			"\x1b[30m11111111 ↵\x1b[0m\n\x1b[30m11\x1b[0m",
+			"\x1b[30m1111111111\x1b[0m",
 		},
 		{
 			"bigger",
@@ -145,7 +155,7 @@ func TestFitText_word(t *testing.T) {
 	})
 }
 
-func Test_stripLongSequenceString(t *testing.T) {
+func TestWrapperState_splitSequencesStack(t *testing.T) {
 	contentWidth := 10
 
 	tests := []struct {
@@ -177,10 +187,10 @@ func Test_stripLongSequenceString(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ss := newSequenceStack()
+			ss := wrapperState{}
 			ss.WriteData(test.data)
 
-			result := stripLongSequenceString(ss, contentWidth, test.markWrappedLine, false)
+			result := ss.splitSequenceStack(contentWidth, test.markWrappedLine)
 			if test.expectedLines != result {
 				t.Errorf("\n[EXPECTED]: %q\n[GOT]: %q", test.expectedLines, result)
 			}

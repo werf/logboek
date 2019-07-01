@@ -13,10 +13,6 @@ func TestSequence_NewSequence(t *testing.T) {
 		t.Run(testData, func(t *testing.T) {
 			s := newSequence(testData)
 
-			if s.kind != unknownSequenceKind {
-				t.Errorf("expectedLines unknown sequence kind")
-			}
-
 			if testData == "" {
 				if s.IsEmpty() != true {
 					t.Errorf("expectedLines empty sequence")
@@ -47,15 +43,6 @@ func TestSequence_SetKind_base(t *testing.T) {
 			t.Errorf("\n[EXPECTED]: %v\n[GOT]: %v", s.kind, kind)
 		}
 	}
-}
-
-func TestSequence_SetKind_panic(t *testing.T) {
-	s := newSequence("")
-	s.SetKind(plainSequenceKind)
-
-	assertPanic(t, "expectedLines panic during reset sequence kind", func() {
-		s.SetKind(plainSequenceKind)
-	})
 }
 
 func TestSequence_TWidth(t *testing.T) {
@@ -216,10 +203,6 @@ func TestSequenceStack_WriteData(t *testing.T) {
 
 	if len(ss.sequences) != 1 {
 		t.Errorf("expectedLines top sequence in stack (got %d)", len(ss.sequences))
-	}
-
-	if ss.TopSequence().kind != unknownSequenceKind {
-		t.Errorf("\n[EXPECTED]: %v\n[GOT]: %v", unknownSequenceKind, ss.TopSequence().kind)
 	}
 
 	if ss.TopSequence().String() != data {
