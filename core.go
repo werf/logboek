@@ -78,6 +78,7 @@ func processDefault() string {
 func processService() string {
 	var result string
 
+	result += formattedPrefix()
 	result += formattedProcessBorders()
 	result += formattedTag()
 
@@ -86,6 +87,35 @@ func processService() string {
 
 func logFBase(w io.Writer, format string, a ...interface{}) (int, error) {
 	return fmt.Fprintf(w, format, a...)
+}
+
+var prefix string
+var prefixColorizeFunc func(...interface{}) string
+
+func SetPrefix(value string, colorizeFunc func(...interface{}) string) {
+	prefix = value
+	prefixColorizeFunc = colorizeFunc
+}
+
+func ResetPrefix() {
+	prefix = ""
+	prefixColorizeFunc = nil
+}
+
+func formattedPrefix() string {
+	if prefix == "" {
+		return ""
+	}
+
+	if prefixColorizeFunc == nil {
+		return prefix
+	}
+
+	return prefixColorizeFunc(prefix)
+}
+
+func prefixWidth() int {
+	return len([]rune(prefix))
 }
 
 var indentWidth int
@@ -160,5 +190,5 @@ func ContentWidth() int {
 }
 
 func serviceWidth() int {
-	return processBordersBlockWidth() + tagPartWidth + indentWidth
+	return prefixWidth() + processBordersBlockWidth() + tagPartWidth + indentWidth
 }
