@@ -49,7 +49,9 @@ func colorizeFormatAndLogF(w io.Writer, colorizeFunc func(...interface{}) string
 		msg = colorizeBaseF(colorizeFunc, "%s", format)
 	}
 
-	msg = FitText(msg, FitTextOptions{MarkWrappedLine: true})
+	if isFitModeOn {
+		msg = FitText(msg, FitTextOptions{MarkWrappedLine: true})
+	}
 
 	processAndLogF(w, msg)
 }

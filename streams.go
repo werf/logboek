@@ -12,6 +12,7 @@ var (
 	errStream io.Writer = os.Stderr
 
 	isRawStreamsOutputModeOn = false
+	isFitModeOn              = false
 
 	streamsFitterState fitterState
 )
@@ -27,7 +28,9 @@ func (p WriterProxy) Write(data []byte) (int, error) {
 		return logFBase(p.Writer, "%s", msg)
 	}
 
-	msg, streamsFitterState = fitText(msg, streamsFitterState, ContentWidth(), true, true)
+	if isFitModeOn {
+		msg, streamsFitterState = fitText(msg, streamsFitterState, ContentWidth(), true, true)
+	}
 
 	_, err := processAndLogFBase(p.Writer, "%s", msg)
 	return len(data), err
