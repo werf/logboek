@@ -55,7 +55,7 @@ func LogBlock(blockMessage string, options LogBlockOptions, blockFunc func()) {
 	}
 
 	titleFunc := func() error {
-		processAndLogLn(outStream, blockMessage)
+		processAndLogLn(outStream, colorizeBaseF(options.ColorizeMsgFunc, blockMessage))
 		return nil
 	}
 
