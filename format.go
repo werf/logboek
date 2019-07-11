@@ -20,6 +20,8 @@ func FitText(text string, options FitTextOptions) string {
 		} else {
 			lineWidth = tw
 		}
+
+		lineWidth -= serviceWidth()
 	}
 
 	return fitTextWithIndent(text, lineWidth, options.ExtraIndentWidth, options.MarkWrappedLine)
@@ -29,7 +31,7 @@ func fitTextWithIndent(text string, lineWidth, extraIndentWidth int, markWrapped
 	var result string
 	var resultLines []string
 
-	contentWidth := lineWidth - serviceWidth() - extraIndentWidth
+	contentWidth := lineWidth - extraIndentWidth
 
 	fittedText, _ := fitText(text, fitterState{}, contentWidth, markWrappedLine, false)
 	for _, line := range strings.Split(fittedText, "\n") {
