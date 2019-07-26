@@ -18,6 +18,10 @@ func initWidth() error {
 			return fmt.Errorf("get terminal size failed: %s", err)
 		}
 
+		if w == 0 {
+			w = DefaultWidth
+		}
+
 		SetWidth(w)
 	}
 
