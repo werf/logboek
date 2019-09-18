@@ -1,7 +1,7 @@
 from ctypes import *
 import os
 
-lib = cdll.LoadLibrary(os.environ.get("LOGBOEK_SO_PATH", "./logboek.so"))
+lib = cdll.LoadLibrary(os.environ.get("LOGBOEK_SO_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "_logboek.so")))
 
 class Error(Exception): pass
 
@@ -155,18 +155,18 @@ def RawStreamsOutputModeOff():
     lib.RawStreamsOutputModeOff()
 
 
-lib.FittedStreamsOutputOn.argtypes = []
-lib.FittedStreamsOutputOn.restype = None
+lib.EnableFitMode.argtypes = []
+lib.EnableFitMode.restype = None
 
-def FittedStreamsOutputOn():
-    lib.FittedStreamsOutputOn()
+def EnableFitMode():
+    lib.EnableFitMode()
 
 
-lib.FittedStreamsOutputOff.argtypes = []
-lib.FittedStreamsOutputOff.restype = None
+lib.EnableFitMode.argtypes = []
+lib.EnableFitMode.restype = None
 
-def FittedStreamsOutputOff():
-    lib.FittedStreamsOutputOff()
+def DisableFitMode():
+    lib.DisableFitMode()
 
 
 lib.MuteOut.argtypes = []

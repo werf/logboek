@@ -6,7 +6,7 @@ import (
 	"github.com/flant/logboek"
 )
 
-//go:generate go build -o logboek.so -buildmode=c-shared github.com/flant/logboek/c_lib
+//go:generate go build -o ../_logboek.so -buildmode=c-shared github.com/flant/logboek/c_lib
 
 //export Init
 func Init() *C.char {
@@ -19,6 +19,16 @@ func Init() *C.char {
 //export DisablePrettyLog
 func DisablePrettyLog() {
 	logboek.DisablePrettyLog()
+}
+
+//export EnableFitMode
+func EnableFitMode() {
+	logboek.EnableFitMode()
+}
+
+//export DisableFitMode
+func DisableFitMode() {
+	logboek.DisableFitMode()
 }
 
 //export EnableLogColor
