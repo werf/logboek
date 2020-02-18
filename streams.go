@@ -22,6 +22,10 @@ type WriterProxy struct {
 }
 
 func (p WriterProxy) Write(data []byte) (int, error) {
+	if !streamsLogLevel.IsAccepted() {
+		return 0, nil
+	}
+
 	msg := string(data)
 
 	if isRawStreamsOutputModeOn {
@@ -34,6 +38,19 @@ func (p WriterProxy) Write(data []byte) (int, error) {
 
 	_, err := processAndLogFBase(p.Writer, "%s", msg)
 	return len(data), err
+}
+
+func SetStreamsLogLevel(logLevel Level) {
+	streamsLogLevel = logLevel
+}
+
+func WithStreamsLogLevel(logLevel Level, f func() error) error {
+	savedStreamsLogLevel := streamsLogLevel
+	streamsLogLevel = logLevel
+	err := f()
+	streamsLogLevel = savedStreamsLogLevel
+
+	return err
 }
 
 func WithRawStreamsOutputModeOn(f func() error) error {
@@ -82,9 +99,15 @@ func UnmuteErr() {
 }
 
 func OutF(format string, a ...interface{}) (int, error) {
+	if !streamsLogLevel.IsAccepted() {
+		return 0, nil
+	}
 	return fmt.Fprintf(GetOutStream(), format, a...)
 }
 
 func ErrF(format string, a ...interface{}) (int, error) {
+	if !streamsLogLevel.IsAccepted() {
+		return 0, nil
+	}
 	return fmt.Fprintf(GetErrStream(), format, a...)
 }

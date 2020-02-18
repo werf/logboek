@@ -2,6 +2,7 @@ package logboek
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"time"
 )
@@ -43,56 +44,81 @@ func disableLogProcessBorder() {
 	processesBorderBetweenIndentWidth = 0
 }
 
-type LogBlockOptions struct {
+type LevelLogBlockOptions struct {
 	WithIndent           bool
 	WithoutLogOptionalLn bool
-	ColorizeMsgFunc      func(...interface{}) string
+	Style                *Style
 }
 
-func LogBlock(blockMessage string, options LogBlockOptions, blockFunc func()) {
-	if options.ColorizeMsgFunc == nil {
-		options.ColorizeMsgFunc = ColorizeBase
+type LogBlockOptions struct {
+	LevelLogBlockOptions
+	Level Level
+}
+
+func LogBlock(blockMessage string, options LogBlockOptions, blockFunc func() error) error {
+	stream := options.Level.Stream()
+
+	if !options.Level.IsAccepted() {
+		return blockFunc()
+	}
+
+	style := options.Style
+	if options.Style == nil {
+		style = options.Level.Style()
 	}
 
 	titleFunc := func() error {
-		processAndLogLn(outStream, colorizeBaseF(options.ColorizeMsgFunc, blockMessage))
+		processAndLogLn(stream, formatWithStyle(style, blockMessage))
 		return nil
 	}
 
 	applyOptionalLnMode()
 
 	bodyFunc := func() error {
-		blockFunc()
-		return nil
+		return blockFunc()
 	}
 
 	if options.WithIndent {
 		bodyFunc = decorateByWithIndent(bodyFunc)
 	}
 
-	_ = decorateByWithExtraProcessBorder(logProcessDownAndRightBorderSign, options.ColorizeMsgFunc, titleFunc)()
-	_ = decorateByWithExtraProcessBorder(logProcessVerticalBorderSign, options.ColorizeMsgFunc, bodyFunc)()
+	_ = decorateByWithExtraProcessBorder(logProcessDownAndRightBorderSign, style, titleFunc)()
+	err := decorateByWithExtraProcessBorder(logProcessVerticalBorderSign, style, bodyFunc)()
 
 	resetOptionalLnMode()
 
-	_ = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, options.ColorizeMsgFunc, titleFunc)()
+	_ = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, style, titleFunc)()
 
 	if !options.WithoutLogOptionalLn {
 		LogOptionalLn()
 	}
+
+	return err
+}
+
+type LevelLogProcessInlineOptions struct {
+	Style *Style
 }
 
 type LogProcessInlineOptions struct {
-	ColorizeMsgFunc func(...interface{}) string
+	LevelLogProcessInlineOptions
+	Level Level
 }
 
 func LogProcessInline(processMessage string, options LogProcessInlineOptions, processFunc func() error) error {
+	if !options.Level.IsAccepted() {
+		return processFunc()
+	}
+
 	return logProcessInline(processMessage, options, processFunc)
 }
 
 func logProcessInline(processMessage string, options LogProcessInlineOptions, processFunc func() error) error {
-	if options.ColorizeMsgFunc == nil {
-		options.ColorizeMsgFunc = ColorizeBase
+	stream := options.Level.Stream()
+
+	style := options.Style
+	if options.Style == nil {
+		style = options.Level.Style()
 	}
 
 	progressDots := "..."
@@ -102,26 +128,26 @@ func logProcessInline(processMessage string, options LogProcessInlineOptions, pr
 	}
 
 	processMessage = processMessage + " " + progressDots
-	colorizeFormatAndLogF(outStream, options.ColorizeMsgFunc, "%s", processMessage)
+	formatAndLogF(stream, style, "%s", processMessage)
 
-	resultColorize := options.ColorizeMsgFunc
+	resultStyle := style
 	start := time.Now()
 
 	resultFormat := " (%s)\n"
 
 	var err error
 	if err = WithIndent(processFunc); err != nil {
-		resultColorize = ColorizeFail
+		resultStyle = StyleByName(FailStyleName)
 		resultFormat = " (%s) FAILED\n"
 	}
 
 	elapsedSeconds := fmt.Sprintf(logProcessTimeFormat, time.Since(start).Seconds())
-	colorizeFormatAndLogF(outStream, resultColorize, resultFormat, elapsedSeconds)
+	formatAndLogF(stream, resultStyle, resultFormat, elapsedSeconds)
 
 	return err
 }
 
-func prepareLogProcessMsgLeftPart(leftPart string, colorizeFunc func(...interface{}) string, rightParts ...string) string {
+func prepareLogProcessMsgLeftPart(leftPart string, style *Style, rightParts ...string) string {
 	var result string
 
 	spaceWidth := ContentWidth() - len(strings.Join(rightParts, logStateRightPartsSeparator))
@@ -140,60 +166,120 @@ func prepareLogProcessMsgLeftPart(leftPart string, colorizeFunc func(...interfac
 		return ""
 	}
 
-	return colorizeFunc(result)
+	return formatWithStyle(style, result)
+}
+
+type LevelLogProcessStartOptions struct {
+	Style *Style
 }
 
 type LogProcessStartOptions struct {
-	ColorizeMsgFunc func(...interface{}) string
+	LevelLogProcessStartOptions
+	Level Level
+}
+
+type LevelLogProcessEndOptions struct {
+	WithoutLogOptionalLn bool
+	WithoutElapsedTime   bool
+	Style                *Style
 }
 
 type LogProcessEndOptions struct {
-	WithoutLogOptionalLn bool
-	WithoutElapsedTime   bool
-	ColorizeMsgFunc      func(...interface{}) string
+	LevelLogProcessEndOptions
+	Level Level
+}
+
+type LevelLogProcessFailOptions struct {
+	LevelLogProcessEndOptions
+}
+
+type LogProcessFailOptions struct {
+	LevelLogProcessFailOptions
+	Level Level
+}
+
+type LevelLogProcessStepEndOptions struct {
+	WithIndent      bool
+	InfoSectionFunc func(err error)
+	Style           *Style
 }
 
 type LogProcessStepEndOptions struct {
-	WithIndent      bool
-	InfoSectionFunc func(err error)
-	ColorizeMsgFunc func(...interface{}) string
+	LevelLogProcessStepEndOptions
+	Level Level
 }
 
-type LogProcessOptions struct {
+type LevelLogProcessOptions struct {
 	WithIndent             bool
 	WithoutLogOptionalLn   bool
 	WithoutElapsedTime     bool
 	InfoSectionFunc        func(err error)
 	SuccessInfoSectionFunc func()
-	ColorizeMsgFunc        func(...interface{}) string
+	Style                  *Style
+}
+
+type LogProcessOptions struct {
+	LevelLogProcessOptions
+	Level Level
 }
 
 func LogProcessStart(processMessage string, options LogProcessStartOptions) {
+	if !options.Level.IsAccepted() {
+		return
+	}
+
 	logProcessStart(processMessage, options)
 }
 
 func LogProcessEnd(options LogProcessEndOptions) {
+	if !options.Level.IsAccepted() {
+		return
+	}
+
 	logProcessEnd(options)
 }
 
 func LogProcessStepEnd(processMessage string, options LogProcessStepEndOptions) {
+	if !options.Level.IsAccepted() {
+		return
+	}
+
 	logProcessStepEnd(processMessage, options)
 }
 
-func LogProcessFail(options LogProcessEndOptions) {
+func LogProcessFail(options LogProcessFailOptions) {
+	if !options.Level.IsAccepted() {
+		return
+	}
+
 	logProcessFail(options)
 }
 
 func LogProcess(processMessage string, options LogProcessOptions, processFunc func() error) error {
+	if !options.Level.IsAccepted() {
+		return processFunc()
+	}
+
 	return logProcess(processMessage, options, processFunc)
 }
 
 func logProcess(processMessage string, options LogProcessOptions, processFunc func() error) error {
-	if options.ColorizeMsgFunc == nil {
-		options.ColorizeMsgFunc = ColorizeBase
+	stream := options.Level.Stream()
+
+	style := options.Style
+	if options.Style == nil {
+		style = options.Level.Style()
 	}
 
-	logProcessStart(processMessage, LogProcessStartOptions{ColorizeMsgFunc: options.ColorizeMsgFunc})
+	logProcessStart(
+		processMessage,
+		LogProcessStartOptions{
+			LevelLogProcessStartOptions: LevelLogProcessStartOptions{
+				Style: style,
+			},
+			Level: options.Level,
+		},
+	)
 
 	bodyFunc := func() error {
 		return processFunc()
@@ -208,7 +294,7 @@ func logProcess(processMessage string, options LogProcessOptions, processFunc fu
 	resetOptionalLnMode()
 
 	if options.InfoSectionFunc != nil {
-		applyInfoLogProcessStep(err, options.InfoSectionFunc, options.WithIndent, options.ColorizeMsgFunc)
+		applyInfoLogProcessStep(stream, err, options.InfoSectionFunc, options.WithIndent, style)
 	}
 
 	if options.SuccessInfoSectionFunc != nil && err == nil {
@@ -216,69 +302,93 @@ func logProcess(processMessage string, options LogProcessOptions, processFunc fu
 			options.SuccessInfoSectionFunc()
 		}
 
-		applyInfoLogProcessStep(err, infoSectionFunc, options.WithIndent, options.ColorizeMsgFunc)
+		applyInfoLogProcessStep(stream, err, infoSectionFunc, options.WithIndent, style)
 	}
 
 	if err != nil {
-		logProcessFail(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, WithoutElapsedTime: options.WithoutElapsedTime, ColorizeMsgFunc: options.ColorizeMsgFunc})
+		logProcessFail(LogProcessFailOptions{
+			LevelLogProcessFailOptions: LevelLogProcessFailOptions{
+				LevelLogProcessEndOptions: LevelLogProcessEndOptions{
+					WithoutLogOptionalLn: options.WithoutLogOptionalLn,
+					WithoutElapsedTime:   options.WithoutElapsedTime,
+					Style:                style,
+				},
+			},
+			Level: options.Level,
+		})
 		return err
 	}
 
-	logProcessEnd(LogProcessEndOptions{WithoutLogOptionalLn: options.WithoutLogOptionalLn, WithoutElapsedTime: options.WithoutElapsedTime, ColorizeMsgFunc: options.ColorizeMsgFunc})
+	logProcessEnd(
+		LogProcessEndOptions{
+			LevelLogProcessEndOptions: LevelLogProcessEndOptions{
+				WithoutLogOptionalLn: options.WithoutLogOptionalLn,
+				WithoutElapsedTime:   options.WithoutElapsedTime,
+				Style:                style,
+			},
+			Level: options.Level,
+		},
+	)
 	return nil
 }
 
 func logProcessStart(processMessage string, options LogProcessStartOptions) {
-	if options.ColorizeMsgFunc == nil {
-		options.ColorizeMsgFunc = ColorizeBase
+	stream := options.Level.Stream()
+
+	style := options.Style
+	if options.Style == nil {
+		style = options.Level.Style()
 	}
 
 	applyOptionalLnMode()
 
 	headerFunc := func() error {
 		return WithoutIndent(func() error {
-			processAndLogLn(outStream, prepareLogProcessMsgLeftPart(processMessage, options.ColorizeMsgFunc))
+			processAndLogLn(stream, prepareLogProcessMsgLeftPart(processMessage, style))
 			return nil
 		})
 	}
 
-	headerFunc = decorateByWithExtraProcessBorder(logProcessDownAndRightBorderSign, options.ColorizeMsgFunc, headerFunc)
+	headerFunc = decorateByWithExtraProcessBorder(logProcessDownAndRightBorderSign, style, headerFunc)
 
 	_ = headerFunc()
 
-	appendProcessBorder(logProcessVerticalBorderSign, options.ColorizeMsgFunc)
+	appendProcessBorder(logProcessVerticalBorderSign, style)
 
 	logProcess := &logProcessDescriptor{StartedAt: time.Now(), Msg: processMessage}
 	activeLogProcesses = append(activeLogProcesses, logProcess)
 }
 
 func logProcessStepEnd(processMessage string, options LogProcessStepEndOptions) {
-	if options.ColorizeMsgFunc == nil {
-		options.ColorizeMsgFunc = ColorizeBase
+	stream := options.Level.Stream()
+
+	style := options.Style
+	if options.Style == nil {
+		style = options.Level.Style()
 	}
 
 	processMessageFunc := func() error {
 		return WithoutIndent(func() error {
-			processAndLogLn(outStream, prepareLogProcessMsgLeftPart(processMessage, options.ColorizeMsgFunc))
+			processAndLogLn(stream, prepareLogProcessMsgLeftPart(processMessage, style))
 			return nil
 		})
 	}
 
-	processMessageFunc = decorateByWithExtraProcessBorder(logProcessVerticalAndRightBorderSign, options.ColorizeMsgFunc, processMessageFunc)
+	processMessageFunc = decorateByWithExtraProcessBorder(logProcessVerticalAndRightBorderSign, style, processMessageFunc)
 	processMessageFunc = decorateByWithoutLastProcessBorder(processMessageFunc)
 
 	_ = processMessageFunc()
 }
 
-func applyInfoLogProcessStep(userError error, infoSectionFunc func(err error), withIndent bool, colorizeMsgFunc func(...interface{}) string) {
+func applyInfoLogProcessStep(stream io.Writer, userError error, infoSectionFunc func(err error), withIndent bool, style *Style) {
 	infoHeaderFunc := func() error {
 		return WithoutIndent(func() error {
-			processAndLogLn(outStream, prepareLogProcessMsgLeftPart("Info", colorizeMsgFunc))
+			processAndLogLn(stream, prepareLogProcessMsgLeftPart("Info", style))
 			return nil
 		})
 	}
 
-	infoHeaderFunc = decorateByWithExtraProcessBorder(logProcessVerticalAndRightBorderSign, colorizeMsgFunc, infoHeaderFunc)
+	infoHeaderFunc = decorateByWithExtraProcessBorder(logProcessVerticalAndRightBorderSign, style, infoHeaderFunc)
 	infoHeaderFunc = decorateByWithoutLastProcessBorder(infoHeaderFunc)
 
 	_ = infoHeaderFunc()
@@ -292,15 +402,18 @@ func applyInfoLogProcessStep(userError error, infoSectionFunc func(err error), w
 		infoFunc = decorateByWithIndent(infoFunc)
 	}
 
-	infoFunc = decorateByWithExtraProcessBorder(logProcessVerticalBorderSign, colorizeMsgFunc, infoFunc)
+	infoFunc = decorateByWithExtraProcessBorder(logProcessVerticalBorderSign, style, infoFunc)
 	infoFunc = decorateByWithoutLastProcessBorder(infoFunc)
 
 	_ = infoFunc()
 }
 
 func logProcessEnd(options LogProcessEndOptions) {
-	if options.ColorizeMsgFunc == nil {
-		options.ColorizeMsgFunc = ColorizeBase
+	stream := options.Level.Stream()
+
+	style := options.Style
+	if options.Style == nil {
+		style = options.Level.Style()
 	}
 
 	popProcessBorder()
@@ -319,14 +432,14 @@ func logProcessEnd(options LogProcessEndOptions) {
 				timePart = fmt.Sprintf(" (%s)", elapsedSeconds)
 			}
 
-			processAndLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, options.ColorizeMsgFunc, timePart))
-			colorizeFormatAndLogF(outStream, options.ColorizeMsgFunc, "%s\n", timePart)
+			processAndLogF(stream, prepareLogProcessMsgLeftPart(logProcess.Msg, style, timePart))
+			formatAndLogF(stream, style, "%s\n", timePart)
 
 			return nil
 		})
 	}
 
-	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, options.ColorizeMsgFunc, footerFunc)
+	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, style, footerFunc)
 
 	_ = footerFunc()
 
@@ -335,9 +448,12 @@ func logProcessEnd(options LogProcessEndOptions) {
 	}
 }
 
-func logProcessFail(options LogProcessEndOptions) {
-	if options.ColorizeMsgFunc == nil {
-		options.ColorizeMsgFunc = ColorizeBase
+func logProcessFail(options LogProcessFailOptions) {
+	stream := options.Level.Stream()
+
+	style := options.Style
+	if options.Style == nil {
+		style = options.Level.Style()
 	}
 
 	popProcessBorder()
@@ -356,14 +472,14 @@ func logProcessFail(options LogProcessEndOptions) {
 				timePart = fmt.Sprintf(" (%s) FAILED", elapsedSeconds)
 			}
 
-			processAndLogF(outStream, prepareLogProcessMsgLeftPart(logProcess.Msg, ColorizeFail, timePart))
-			colorizeFormatAndLogF(outStream, ColorizeFail, "%s\n", timePart)
+			processAndLogF(stream, prepareLogProcessMsgLeftPart(logProcess.Msg, StyleByName(FailStyleName), timePart))
+			formatAndLogF(stream, StyleByName(FailStyleName), "%s\n", timePart)
 
 			return nil
 		})
 	}
 
-	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, options.ColorizeMsgFunc, footerFunc)
+	footerFunc = decorateByWithExtraProcessBorder(logProcessUpAndRightBorderSign, style, footerFunc)
 
 	_ = footerFunc()
 
@@ -372,14 +488,14 @@ func logProcessFail(options LogProcessEndOptions) {
 	}
 }
 
-func decorateByWithExtraProcessBorder(colorlessBorder string, colorizeFunc func(...interface{}) string, decoratedFunc func() error) func() error {
+func decorateByWithExtraProcessBorder(colorlessBorder string, style *Style, decoratedFunc func() error) func() error {
 	return func() error {
-		return withExtraProcessBorder(colorlessBorder, colorizeFunc, decoratedFunc)
+		return withExtraProcessBorder(colorlessBorder, style, decoratedFunc)
 	}
 }
 
-func withExtraProcessBorder(colorlessValue string, colorizeFunc func(...interface{}) string, decoratedFunc func() error) error {
-	appendProcessBorder(colorlessValue, colorizeFunc)
+func withExtraProcessBorder(colorlessValue string, style *Style, decoratedFunc func() error) error {
+	appendProcessBorder(colorlessValue, style)
 	err := decoratedFunc()
 	popProcessBorder()
 
@@ -407,9 +523,9 @@ func withoutLastProcessBorder(f func() error) error {
 	return err
 }
 
-func appendProcessBorder(colorlessValue string, colorizeFunc func(...interface{}) string) {
+func appendProcessBorder(colorlessValue string, style *Style) {
 	processesBorderValues = append(processesBorderValues, colorlessValue)
-	processesBorderFormattedValues = append(processesBorderFormattedValues, colorizeFunc(colorlessValue))
+	processesBorderFormattedValues = append(processesBorderFormattedValues, formatWithStyle(style, colorlessValue))
 }
 
 func popProcessBorder() {
