@@ -5,23 +5,23 @@ import "strings"
 var (
 	tagPartWidth int
 
-	tagValue        string
-	tagColorizeFunc func(...interface{}) string
-	tagIndentWidth  = 2
+	tagValue       string
+	tagStyle       *Style
+	tagIndentWidth = 2
 )
 
-func WithTag(value string, colorizeFunc func(...interface{}) string, f func() error) error {
+func WithTag(value string, style *Style, f func() error) error {
 	savedTag := tagValue
-	savedColorizeFunc := tagColorizeFunc
+	savedStyle := tagStyle
 
-	SetTag(value, colorizeFunc)
+	SetTag(value, style)
 	err := f()
-	SetTag(savedTag, savedColorizeFunc)
+	SetTag(savedTag, savedStyle)
 
 	return err
 }
 
-func SetTag(value string, colorizeFunc func(...interface{}) string) {
+func SetTag(value string, style *Style) {
 	if value != "" {
 		tagPartWidth = len(value) + tagIndentWidth
 	} else {
@@ -29,7 +29,7 @@ func SetTag(value string, colorizeFunc func(...interface{}) string) {
 	}
 
 	tagValue = value
-	tagColorizeFunc = colorizeFunc
+	tagStyle = style
 }
 
 func formattedTag() string {
@@ -38,7 +38,7 @@ func formattedTag() string {
 	}
 
 	return strings.Join([]string{
-		tagColorizeFunc(tagValue),
+		tagStyle.Colorize(tagValue),
 		strings.Repeat(" ", tagIndentWidth),
 	}, "")
 }

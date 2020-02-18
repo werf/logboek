@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/flant/logboek"
 )
 
@@ -27,7 +28,7 @@ func main() {
 	logboek.EnableFitMode()
 	logboek.SetWidth(twidth)
 
-	logboek.SetPrefix("prefix: ", logboek.ColorizeSuccess)
+	logboek.SetPrefix("prefix: ", &logboek.Style{Attributes: []color.Attribute{color.BgBlue, color.Bold}})
 
 	_ = logboek.LogProcess("process with prefix", logboek.LogProcessOptions{}, func() error {
 		logboek.LogInfoLn(strings.Repeat("long sentence ", 5))

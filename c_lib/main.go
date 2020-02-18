@@ -63,27 +63,27 @@ func OptionalLnModeOn() {
 
 //export Log
 func Log(data *C.char) {
-	logboek.LogF("%s", C.GoString(data))
+	logboek.Default.LogF("%s", C.GoString(data))
 }
 
 //export LogHighlight
 func LogHighlight(data *C.char) {
-	logboek.LogHighlightF("%s", C.GoString(data))
+	logboek.Default.LogFHighlight("%s", C.GoString(data))
 }
 
 //export LogService
 func LogService(data *C.char) {
-	logboek.LogF("%s", C.GoString(data))
+	logboek.Default.LogF("%s", C.GoString(data))
 }
 
 //export LogInfo
 func LogInfo(data *C.char) {
-	logboek.LogInfoF("%s", C.GoString(data))
+	logboek.Default.LogFDetails("%s", C.GoString(data))
 }
 
 //export LogError
 func LogError(data *C.char) {
-	logboek.LogErrorF("%s", C.GoString(data))
+	logboek.Warn.LogF("%s", C.GoString(data))
 }
 
 //export LogProcessStart
@@ -93,17 +93,23 @@ func LogProcessStart(msg *C.char) {
 
 //export LogProcessEnd
 func LogProcessEnd(withoutLogOptionalLn bool) {
-	logboek.LogProcessEnd(logboek.LogProcessEndOptions{WithoutLogOptionalLn: withoutLogOptionalLn})
+	logboek.Default.LogProcessEnd(logboek.LevelLogProcessEndOptions{WithoutLogOptionalLn: withoutLogOptionalLn})
 }
 
 //export LogProcessStepEnd
 func LogProcessStepEnd(msg *C.char) {
-	logboek.LogProcessStepEnd(C.GoString(msg), logboek.LogProcessStepEndOptions{})
+	logboek.Default.LogProcessStepEnd(C.GoString(msg), logboek.LevelLogProcessStepEndOptions{})
 }
 
 //export LogProcessFail
 func LogProcessFail(withoutLogOptionalLn bool) {
-	logboek.LogProcessFail(logboek.LogProcessEndOptions{WithoutLogOptionalLn: withoutLogOptionalLn})
+	logboek.Default.LogProcessFail(
+		logboek.LevelLogProcessFailOptions{
+			LevelLogProcessEndOptions: logboek.LevelLogProcessEndOptions{
+				WithoutLogOptionalLn: withoutLogOptionalLn,
+			},
+		},
+	)
 }
 
 //export FitText

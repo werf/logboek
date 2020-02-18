@@ -6,6 +6,16 @@ import (
 	"strings"
 )
 
+func formatAndLogF(stream io.Writer, style *Style, format string, a ...interface{}) {
+	msg := formatWithStyle(style, format, a...)
+
+	if isFitModeOn {
+		msg = FitText(msg, FitTextOptions{MarkWrappedLine: true})
+	}
+
+	processAndLogF(stream, msg)
+}
+
 func processAndLogLn(w io.Writer, a ...interface{}) {
 	processAndLogF(w, fmt.Sprintln(a...))
 }
@@ -90,16 +100,16 @@ func logFBase(w io.Writer, format string, a ...interface{}) (int, error) {
 }
 
 var prefix string
-var prefixColorizeFunc func(...interface{}) string
+var prefixStyle *Style
 
-func SetPrefix(value string, colorizeFunc func(...interface{}) string) {
+func SetPrefix(value string, style *Style) {
 	prefix = value
-	prefixColorizeFunc = colorizeFunc
+	prefixStyle = style
 }
 
 func ResetPrefix() {
 	prefix = ""
-	prefixColorizeFunc = nil
+	prefixStyle = nil
 }
 
 func formattedPrefix() string {
@@ -107,11 +117,7 @@ func formattedPrefix() string {
 		return ""
 	}
 
-	if prefixColorizeFunc == nil {
-		return prefix
-	}
-
-	return prefixColorizeFunc(prefix)
+	return formatWithStyle(prefixStyle, prefix)
 }
 
 func prefixWidth() int {
