@@ -165,7 +165,7 @@ func decorateByWithIndent(decoratedFunc func() error) func() error {
 
 var isOptionalLnModeOn bool
 
-func LogOptionalLn() {
+func logOptionalLn() {
 	isOptionalLnModeOn = true
 }
 
