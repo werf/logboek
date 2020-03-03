@@ -13,6 +13,10 @@ func LogF(format string, a ...interface{}) {
 	Default.LogF(format, a...)
 }
 
+func LogOptionalLn() {
+	Default.LogOptionalLn()
+}
+
 func LogInfoLn(a ...interface{}) {
 	Info.LogLn(a...)
 }

@@ -59,6 +59,14 @@ func (l Level) LogFWithCustomStyle(style *Style, format string, a ...interface{}
 	logFCustom(l.Stream(), l, style, format, a...)
 }
 
+func (l Level) LogOptionalLn() {
+	if !l.IsAccepted() {
+		return
+	}
+
+	logOptionalLn()
+}
+
 func (l Level) LogBlock(blockMessage string, options LevelLogBlockOptions, processFunc func() error) error {
 	return LogBlock(
 		blockMessage,
