@@ -1,6 +1,7 @@
 package logboek
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,18 +27,41 @@ func (p WriterProxy) Write(data []byte) (int, error) {
 		return 0, nil
 	}
 
-	msg := string(data)
-
 	if isRawStreamsOutputModeOn {
-		return logFBase(p.Writer, "%s", msg)
+		return logFBase(p.Writer, "%s", string(data))
 	}
 
-	if isFitModeOn {
-		msg, streamsFitterState = fitText(msg, streamsFitterState, ContentWidth(), true, true)
+	for _, chunk := range splitData(data, 256) {
+		msg := string(chunk)
+
+		if isFitModeOn {
+			msg, streamsFitterState = fitText(msg, streamsFitterState, ContentWidth(), true, true)
+		}
+
+		_, err := processAndLogFBase(p.Writer, "%s", msg)
+		if err != nil {
+			return len(data), err
+		}
 	}
 
-	_, err := processAndLogFBase(p.Writer, "%s", msg)
-	return len(data), err
+	return len(data), nil
+}
+
+func splitData(data []byte, chunkSize int) [][]rune {
+	buf := bytes.Runes(data)
+	chunks := make([][]rune, 0, len(buf)/chunkSize+1)
+
+	for len(buf) >= chunkSize {
+		var chunk []rune
+		chunk, buf = buf[:chunkSize], buf[chunkSize:]
+		chunks = append(chunks, chunk)
+	}
+
+	if len(buf) > 0 {
+		chunks = append(chunks, buf)
+	}
+
+	return chunks
 }
 
 func SetStreamsLogLevel(logLevel Level) {
