@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 )
 
 func formatAndLogF(stream io.Writer, style *Style, format string, a ...interface{}) {
@@ -99,10 +100,19 @@ func logFBase(w io.Writer, format string, a ...interface{}) (int, error) {
 	return fmt.Fprintf(w, format, a...)
 }
 
+var runningTimePrefix bool
 var prefix string
 var prefixStyle *Style
+var runningTimePrefixTime time.Time
+
+func SetRunningTimePrefix(style *Style) {
+	prefixStyle = style
+	runningTimePrefix = true
+	runningTimePrefixTime = time.Now()
+}
 
 func SetPrefix(value string, style *Style) {
+	ResetPrefix()
 	prefix = value
 	prefixStyle = style
 }
@@ -110,18 +120,34 @@ func SetPrefix(value string, style *Style) {
 func ResetPrefix() {
 	prefix = ""
 	prefixStyle = nil
+	runningTimePrefix = false
 }
 
 func formattedPrefix() string {
-	if prefix == "" {
+	if getPrefix() == "" {
 		return ""
 	}
 
-	return formatWithStyle(prefixStyle, prefix)
+	return formatWithStyle(prefixStyle, getPrefix())
+}
+
+func getPrefix() string {
+	if runningTimePrefix {
+		timeString := time.Since(runningTimePrefixTime).String()
+		if len(timeString) > 12 {
+			timeString = timeString[:12]
+		} else {
+			timeString += strings.Repeat(" ", 12-len(timeString))
+		}
+
+		return timeString
+	}
+
+	return prefix
 }
 
 func prefixWidth() int {
-	return len([]rune(prefix))
+	return len([]rune(getPrefix()))
 }
 
 var indentWidth int
