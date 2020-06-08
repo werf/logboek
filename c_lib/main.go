@@ -3,10 +3,10 @@ package main
 import (
 	"C"
 
-	"github.com/flant/logboek"
+	"github.com/werf/logboek"
 )
 
-//go:generate go build -o ../_logboek.so -buildmode=c-shared github.com/flant/logboek/c_lib
+//go:generate go build -o ../_logboek.so -buildmode=c-shared github.com/werf/logboek/c_lib
 
 //export Init
 func Init() *C.char {
