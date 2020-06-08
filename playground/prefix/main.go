@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/flant/logboek"
+	"github.com/werf/logboek"
 )
 
 //prefix: ┌ process with prefix
