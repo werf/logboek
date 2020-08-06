@@ -1,4 +1,4 @@
-package logboek
+package fitter
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ const (
 	resetColorCode = 0
 )
 
-type fitterState struct {
+type State struct {
 	wrapperState
 	controlSequenceState
 	colorState
@@ -111,7 +111,7 @@ func markLine(line string, twidth, contentWidth int) string {
 	return line + strings.Repeat(" ", padding) + "↵"
 }
 
-func (s *fitterState) parseColorCodes() []int {
+func (s *State) parseColorCodes() []int {
 	preparedColorFormatsPart := string(s.controlSequenceBytes[:len(s.controlSequenceBytes)-1])
 	preparedColorFormatsPart = string(bytes.TrimPrefix([]byte(preparedColorFormatsPart), []byte{escapeSequenceCode, []byte("[")[0]}))
 
@@ -133,7 +133,7 @@ func (s *fitterState) parseColorCodes() []int {
 	return colorCodes
 }
 
-func (s *fitterState) generateColorControlSequence() string {
+func (s *State) generateColorControlSequence() string {
 	var result string
 
 	if len(s.colorControlSequenceCodes) != 0 {
@@ -151,7 +151,7 @@ func (s *fitterState) generateColorControlSequence() string {
 	return result
 }
 
-func (s *fitterState) addColorControlSequenceCode(newColorCode int) {
+func (s *State) addColorControlSequenceCode(newColorCode int) {
 	for i, colorCode := range s.colorControlSequenceCodes {
 		if colorCode == newColorCode {
 			s.colorControlSequenceCodes = append(s.colorControlSequenceCodes[:i], s.colorControlSequenceCodes[i+1:]...)
@@ -162,7 +162,7 @@ func (s *fitterState) addColorControlSequenceCode(newColorCode int) {
 	s.colorControlSequenceCodes = append(s.colorControlSequenceCodes, newColorCode)
 }
 
-func (s *fitterState) resetColorCodes() {
+func (s *State) resetColorCodes() {
 	s.colorControlSequenceCodes = []int{}
 }
 
@@ -174,24 +174,23 @@ func contentWidthWithoutMarkSign(contentWidth int, markWrappedLine bool) int {
 	return contentWidth
 }
 
-func fitText(text string, s fitterState, contentWidth int, markWrappedLine bool, cacheIncompleteLine bool) (string, fitterState) {
+func FitText(text string, s *State, contentWidth int, markWrappedLine bool, cacheIncompleteLine bool) string {
 	var result string
 
 	for _, r := range []rune(text) {
-		result += runFitterWrapper(r, &s, contentWidth, markWrappedLine)
-		ignoreControlSequenceTWidth(r, &s)
+		result += runFitterWrapper(r, s, contentWidth, markWrappedLine)
+		ignoreControlSequenceTWidth(r, s)
 	}
 
 	if !cacheIncompleteLine {
 		result += s.wrapperState.Apply(contentWidth, markWrappedLine)
 	}
 
-	result = addRequiredColorControlSequences(result, &s)
-
-	return result, s
+	result = addRequiredColorControlSequences(result, s)
+	return result
 }
 
-func runFitterWrapper(r rune, s *fitterState, contentWidth int, markWrappedLine bool) string {
+func runFitterWrapper(r rune, s *State, contentWidth int, markWrappedLine bool) string {
 	var result string
 
 	switch string(r) {
@@ -210,19 +209,19 @@ func runFitterWrapper(r rune, s *fitterState, contentWidth int, markWrappedLine 
 	return result
 }
 
-func ignoreControlSequenceTWidth(r rune, s *fitterState) {
-	processControlSequenceFunc := func(s *fitterState, _ string) {
+func ignoreControlSequenceTWidth(r rune, s *State) {
+	processControlSequenceFunc := func(s *State, _ string) {
 		s.wrapperState.sequenceStack.CommitTopSequenceAsControl()
 	}
 
-	processEscapeSequenceCodeFunc := func(s *fitterState) {
+	processEscapeSequenceCodeFunc := func(s *State) {
 		s.wrapperState.sequenceStack.DivideLastSign()
 	}
 
 	processFitterControlSequence(r, s, processEscapeSequenceCodeFunc, processControlSequenceFunc)
 }
 
-func processFitterControlSequence(r rune, s *fitterState, processEscapeSequenceCodeFunc func(f *fitterState), processControlSequenceFunc func(f *fitterState, code string)) {
+func processFitterControlSequence(r rune, s *State, processEscapeSequenceCodeFunc func(f *State), processControlSequenceFunc func(f *State, code string)) {
 	switch s.controlSequenceCursorState {
 	case isControlSequenceNoneProcessed:
 		switch r {
@@ -260,7 +259,7 @@ func processFitterControlSequence(r rune, s *fitterState, processEscapeSequenceC
 	}
 }
 
-func addRequiredColorControlSequences(fittedText string, s *fitterState) string {
+func addRequiredColorControlSequences(fittedText string, s *State) string {
 	var result string
 
 	for _, r := range []rune(fittedText) {
@@ -285,7 +284,7 @@ func addRequiredColorControlSequences(fittedText string, s *fitterState) string 
 
 		s.prevCursorRune = r
 
-		processControlSequenceFunc := func(s *fitterState, code string) {
+		processControlSequenceFunc := func(s *State, code string) {
 			if string(r) == "m" {
 				processColorControlSequence(s)
 			}
@@ -297,7 +296,7 @@ func addRequiredColorControlSequences(fittedText string, s *fitterState) string 
 	return result
 }
 
-func processColorControlSequence(s *fitterState) {
+func processColorControlSequence(s *State) {
 	colorCodes := s.parseColorCodes()
 	for _, colorCode := range colorCodes {
 		if isResetColorCode(colorCode) {

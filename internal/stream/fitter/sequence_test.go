@@ -1,4 +1,4 @@
-package logboek
+package fitter
 
 import (
 	"reflect"
