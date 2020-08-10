@@ -1,10 +1,12 @@
-package logboek
+package fitter
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 )
+
+const contentWidth = 10
 
 type fitTextTest struct {
 	name     string
@@ -15,7 +17,7 @@ type fitTextTest struct {
 func runFitTextTests(t *testing.T, testNameFormat string, withMarkedLine bool, tests []fitTextTest) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf(testNameFormat, test.name), func(t *testing.T) {
-			result := FitText(test.data, FitTextOptions{MarkWrappedLine: withMarkedLine})
+			result := FitText(test.data, &State{}, contentWidth, withMarkedLine, false)
 			if test.expected != result {
 				t.Errorf("\n[EXPECTED]: %q\n[GOT]: %q", test.expected, result)
 			}
@@ -24,9 +26,6 @@ func runFitTextTests(t *testing.T, testNameFormat string, withMarkedLine bool, t
 }
 
 func TestFitText_sentence(t *testing.T) {
-	contentWidth := 10
-	SetWidth(contentWidth)
-
 	runFitTextTests(t, "withoutMarkedLine_%s", false, []fitTextTest{
 		{
 			"short",
@@ -85,9 +84,6 @@ func TestFitText_sentence(t *testing.T) {
 }
 
 func TestFitText_word(t *testing.T) {
-	contentWidth := 10
-	SetWidth(contentWidth)
-
 	runFitTextTests(t, "withoutMarkedLine_%s", false, []fitTextTest{
 		{
 			"short",
@@ -156,8 +152,6 @@ func TestFitText_word(t *testing.T) {
 }
 
 func TestWrapperState_splitSequencesStack(t *testing.T) {
-	contentWidth := 10
-
 	tests := []struct {
 		name            string
 		data            string
@@ -199,8 +193,6 @@ func TestWrapperState_splitSequencesStack(t *testing.T) {
 }
 
 func Test_markLine(t *testing.T) {
-	contentWidth := 10
-
 	tests := []struct {
 		name     string
 		data     string
