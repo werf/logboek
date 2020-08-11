@@ -93,10 +93,10 @@ func (s *Stream) logProcessInline(processMessage string, options *LogProcessInli
 	}
 
 	maxLength := s.ContentWidth() - len(" ") - len(progressDots) - len(fmt.Sprintf(logProcessTimeFormat, 1234.0))
-	if maxLength > 0 && len(processMessage) > maxLength {
-		processMessage = processMessage[:maxLength-1]
-	} else {
+	if maxLength < 1 {
 		processMessage = ""
+	} else if len(processMessage) > maxLength {
+		processMessage = processMessage[:maxLength-1]
 	}
 
 	processMessage = processMessage + " " + progressDots
