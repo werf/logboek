@@ -7,6 +7,10 @@ type StreamsInterface interface {
 	Unmute()
 	IsMuted() bool
 
+	EnableGitlabCollapsibleSections()
+	DisableGitlabCollapsibleSections()
+	IsGitlabCollapsibleSections() bool
+
 	DisablePrettyLog()
 
 	DoWithProxyStreamDataFormatting(func())
