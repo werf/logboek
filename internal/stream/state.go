@@ -1,6 +1,7 @@
 package stream
 
 import (
+	"os"
 	"strings"
 	"time"
 
@@ -50,6 +51,7 @@ type streamMode struct {
 	isStyleEnabled                     bool
 	isLineWrappingEnabled              bool
 	isProxyStreamDataFormattingEnabled bool
+	isGitlabCollapsibleSectionsEnabled bool
 }
 
 func newStreamMode() streamMode {
@@ -57,6 +59,7 @@ func newStreamMode() streamMode {
 		isStyleEnabled:                     !color.NoColor,
 		isLineWrappingEnabled:              true,
 		isProxyStreamDataFormattingEnabled: true,
+		isGitlabCollapsibleSectionsEnabled: os.Getenv("GITLAB_CI") == "true",
 	}
 }
 
@@ -70,6 +73,18 @@ func (s *State) Unmute() {
 
 func (s *State) IsMuted() bool {
 	return s.isMuted
+}
+
+func (s *State) EnableGitlabCollapsibleSections() {
+	s.isGitlabCollapsibleSectionsEnabled = true
+}
+
+func (s *State) DisableGitlabCollapsibleSections() {
+	s.isGitlabCollapsibleSectionsEnabled = false
+}
+
+func (s *State) IsGitlabCollapsibleSections() bool {
+	return s.isGitlabCollapsibleSectionsEnabled
 }
 
 func (s *State) DoWithProxyStreamDataFormatting(f func()) {
@@ -250,6 +265,7 @@ type processState struct {
 	processesBorderValues                []string
 	processesBorderFormattedValues       []string
 	activeLogProcesses                   []*logProcessDescriptor
+	isGitlabCollapsibleSectionActive     bool
 }
 
 func newProcessState() processState {
