@@ -107,5 +107,6 @@ func (l *Logger) ProxyErrStream() io.Writer {
 func (l *Logger) NewSubLogger(outStream, errStream io.Writer) types.LoggerInterface {
 	subLogger := NewLogger(outStream, errStream)
 	subLogger.setCommonStreamState(l.commonStreamState.SubState())
+	subLogger.SetAcceptedLevel(l.acceptedLevel)
 	return subLogger
 }
