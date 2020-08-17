@@ -139,6 +139,10 @@ func NewContext(ctx context.Context, logger types.LoggerInterface) context.Conte
 }
 
 func Context(ctx context.Context) types.LoggerInterface {
+	if ctx == context.Background() {
+		return DefaultLogger()
+	}
+
 	ctxValue := ctx.Value(ctxLoggerKey)
 	if ctxValue == nil {
 		panic("context is not bound with logboek logger")
