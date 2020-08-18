@@ -110,3 +110,7 @@ func (l *Logger) NewSubLogger(outStream, errStream io.Writer) types.LoggerInterf
 	subLogger.SetAcceptedLevel(l.acceptedLevel)
 	return subLogger
 }
+
+func (l *Logger) Reset() {
+	l.outStream.Reset()
+}
