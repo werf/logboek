@@ -52,6 +52,8 @@ type streamMode struct {
 	isLineWrappingEnabled              bool
 	isProxyStreamDataFormattingEnabled bool
 	isGitlabCollapsibleSectionsEnabled bool
+	isPrefixWithTimeEnabled            bool
+	isLogProcessBorderEnabled          bool
 }
 
 func newStreamMode() streamMode {
@@ -60,6 +62,7 @@ func newStreamMode() streamMode {
 		isLineWrappingEnabled:              true,
 		isProxyStreamDataFormattingEnabled: true,
 		isGitlabCollapsibleSectionsEnabled: os.Getenv("GITLAB_CI") == "true",
+		isLogProcessBorderEnabled:          true,
 	}
 }
 
@@ -85,6 +88,18 @@ func (s *State) DisableGitlabCollapsibleSections() {
 
 func (s *State) IsGitlabCollapsibleSections() bool {
 	return s.isGitlabCollapsibleSectionsEnabled
+}
+
+func (s *State) EnableLogProcessBorder() {
+	s.isLogProcessBorderEnabled = true
+}
+
+func (s *State) DisableLogProcessBorder() {
+	s.isLogProcessBorderEnabled = true
+}
+
+func (s *State) IsLogProcessBorderEnabled() bool {
+	return s.isLogProcessBorderEnabled
 }
 
 func (s *State) DoWithProxyStreamDataFormatting(f func()) {
@@ -256,40 +271,62 @@ func newCursorState() cursorState {
 }
 
 type processState struct {
-	logProcessDownAndRightBorderSign     string
-	logProcessVerticalBorderSign         string
-	logProcessVerticalAndRightBorderSign string
-	logProcessUpAndRightBorderSign       string
-	processesBorderBetweenIndentWidth    int
-	processesBorderIndentWidth           int
-	processesBorderValues                []string
-	processesBorderFormattedValues       []string
-	activeLogProcesses                   []*logProcessDescriptor
-	isGitlabCollapsibleSectionActive     bool
+	processesBorderValues            []string
+	processesBorderFormattedValues   []string
+	activeLogProcesses               []*logProcessDescriptor
+	isGitlabCollapsibleSectionActive bool
 }
 
 func newProcessState() processState {
-	s := processState{}
-	s.EnableLogProcessBorder()
-	return s
+	return processState{}
 }
 
-func (s *processState) EnableLogProcessBorder() {
-	s.logProcessDownAndRightBorderSign = "┌"
-	s.logProcessVerticalBorderSign = "│"
-	s.logProcessVerticalAndRightBorderSign = "├"
-	s.logProcessUpAndRightBorderSign = "└"
-	s.processesBorderBetweenIndentWidth = 1
-	s.processesBorderIndentWidth = 1
+func (s *State) LogProcessDownAndRightBorderSign() string {
+	if s.isLogProcessBorderEnabled {
+		return "┌"
+	}
+
+	return ""
 }
 
-func (s *processState) DisableLogProcessBorder() {
-	s.logProcessDownAndRightBorderSign = ""
-	s.logProcessVerticalBorderSign = "  "
-	s.logProcessVerticalAndRightBorderSign = ""
-	s.logProcessUpAndRightBorderSign = ""
-	s.processesBorderIndentWidth = 0
-	s.processesBorderBetweenIndentWidth = 0
+func (s *State) LogProcessVerticalBorderSign() string {
+	if s.isLogProcessBorderEnabled {
+		return "│"
+	}
+
+	return ""
+}
+
+func (s *State) LogProcessVerticalAndRightBorderSign() string {
+	if s.isLogProcessBorderEnabled {
+		return "├"
+	}
+
+	return ""
+}
+
+func (s *State) LogProcessUpAndRightBorderSign() string {
+	if s.isLogProcessBorderEnabled {
+		return "└"
+	}
+
+	return ""
+}
+
+func (s *State) ProcessesBorderBetweenIndentWidth() int {
+	if s.isLogProcessBorderEnabled {
+		return 1
+	}
+
+	return 0
+}
+
+func (s *State) ProcessesBorderIndentWidth() int {
+	if s.isLogProcessBorderEnabled {
+		return 1
+	}
+
+	return 0
 }
 
 func (s *State) decorateByWithExtraProcessBorder(colorlessBorder string, style *stylePkg.Style, decoratedFunc func() error) func() error {
@@ -346,7 +383,7 @@ func (s *State) formattedProcessBorders() string {
 		return ""
 	}
 
-	return strings.Join(s.processesBorderFormattedValues, strings.Repeat(" ", s.processesBorderBetweenIndentWidth)) + strings.Repeat(" ", s.processesBorderIndentWidth)
+	return strings.Join(s.processesBorderFormattedValues, strings.Repeat(" ", s.ProcessesBorderBetweenIndentWidth())) + strings.Repeat(" ", s.ProcessesBorderIndentWidth())
 }
 
 func (s *State) processBordersBlockWidth() int {
@@ -354,7 +391,7 @@ func (s *State) processBordersBlockWidth() int {
 		return 0
 	}
 
-	return len([]rune(strings.Join(s.processesBorderValues, strings.Repeat(" ", s.processesBorderBetweenIndentWidth)))) + s.processesBorderIndentWidth
+	return len([]rune(strings.Join(s.processesBorderValues, strings.Repeat(" ", s.ProcessesBorderBetweenIndentWidth())))) + s.ProcessesBorderIndentWidth()
 }
 
 type tagState struct {
@@ -419,10 +456,9 @@ func (s *State) formattedTag() string {
 }
 
 type prefixState struct {
-	prefix                  string
-	prefixStyle             *stylePkg.Style
-	isPrefixWithTimeEnabled bool
-	prefixTime              time.Time
+	prefix      string
+	prefixStyle *stylePkg.Style
+	prefixTime  time.Time
 }
 
 func newPrefixState() prefixState {
