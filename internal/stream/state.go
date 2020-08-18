@@ -34,10 +34,18 @@ func NewStreamState() *State {
 }
 
 func (s *State) SubState() *State {
-	return &State{
-		width:      s.ContentWidth(),
-		streamMode: s.streamMode,
-	}
+	ss := s.SharedState()
+	ss.width = s.ContentWidth()
+	return ss
+}
+
+func (s *State) SharedState() *State {
+	ss := s.clone()
+	ss.isOptionalLnEnabled = false
+	ss.State = fitter.State{}
+	ss.cursorState = newCursorState()
+	ss.processState = newProcessState()
+	return ss
 }
 
 func (s *State) DisablePrettyLog() {
@@ -547,6 +555,11 @@ func (s *State) formatWithStyle(style *stylePkg.Style, format string, a ...inter
 	} else {
 		return style.Colorize(format, a...)
 	}
+}
+
+func (s *State) clone() *State {
+	sClone := *s
+	return &sClone
 }
 
 func (s *State) reset() {
