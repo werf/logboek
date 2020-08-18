@@ -3,10 +3,9 @@ package logger
 import (
 	"io"
 
-	"github.com/werf/logboek/pkg/style"
-
 	"github.com/werf/logboek/internal/stream"
 	"github.com/werf/logboek/pkg/level"
+	stylePkg "github.com/werf/logboek/pkg/style"
 	"github.com/werf/logboek/pkg/types"
 )
 
@@ -98,9 +97,11 @@ func (l *Logger) FitText(text string, options types.FitTextOptions) string {
 	return l.outStream.FitText(text, options)
 }
 
-func (l *Logger) Colorize(style style.Style, f string, a ...interface{}) string {
-	if l.commonStreamState.IsStyleEnabled() {
-		stylePkg.SimpleFormat(f, a...)
+func (l *Logger) Colorize(style *stylePkg.Style, format string, a ...interface{}) string {
+	if !l.commonStreamState.IsStyleEnabled() {
+		return stylePkg.SimpleFormat(format, a...)
+	} else {
+		return style.Colorize(format, a...)
 	}
 }
 

@@ -122,6 +122,10 @@ func FitText(text string, options types.FitTextOptions) string {
 	return defaultLogger.FitText(text, options)
 }
 
+func Colorize(style *style.Style, format string, a ...interface{}) string {
+	return defaultLogger.Colorize(style, format, a...)
+}
+
 func ProxyOutStream() io.Writer {
 	return defaultLogger.ProxyOutStream()
 }
@@ -149,4 +153,8 @@ func Context(ctx context.Context) types.LoggerInterface {
 	}
 
 	return ctxValue.(types.LoggerInterface)
+}
+
+func Reset() {
+	defaultLogger.Reset()
 }

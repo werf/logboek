@@ -17,7 +17,7 @@ type LoggerInterface interface {
 	Debug() ManagerInterface
 
 	FitText(text string, options FitTextOptions) string
-	Colorize(style style.Style, format string, a ...interface{}) string
+	Colorize(style *style.Style, format string, a ...interface{}) string
 
 	AcceptedLevel() level.Level
 	SetAcceptedLevel(lvl level.Level)
