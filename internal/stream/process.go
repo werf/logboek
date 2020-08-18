@@ -56,13 +56,13 @@ func (s *Stream) logBlock(blockMessage string, options *LogBlockOptions, blockFu
 	}
 
 	_ = s.decorateByWithExtraProcessBorder(
-		s.logProcessDownAndRightBorderSign,
+		s.LogProcessDownAndRightBorderSign(),
 		style,
 		titleFunc,
 	)()
 
 	err := s.decorateByWithExtraProcessBorder(
-		s.logProcessVerticalBorderSign,
+		s.LogProcessVerticalBorderSign(),
 		style,
 		bodyFunc,
 	)()
@@ -70,7 +70,7 @@ func (s *Stream) logBlock(blockMessage string, options *LogBlockOptions, blockFu
 	s.DisableOptionalLn()
 
 	_ = s.decorateByWithExtraProcessBorder(
-		s.logProcessUpAndRightBorderSign,
+		s.LogProcessUpAndRightBorderSign(),
 		style,
 		titleFunc,
 	)()
@@ -221,7 +221,7 @@ func (s *Stream) logProcessStart(processMessage string, options LogProcessOption
 		})
 	}
 
-	headerFunc = s.decorateByWithExtraProcessBorder(s.logProcessDownAndRightBorderSign, style, headerFunc)
+	headerFunc = s.decorateByWithExtraProcessBorder(s.LogProcessDownAndRightBorderSign(), style, headerFunc)
 
 	var currentGitlabCollapsibleSectionId string
 	if s.shouldGitlabCollapsibleSectionBeOpened() {
@@ -231,7 +231,7 @@ func (s *Stream) logProcessStart(processMessage string, options LogProcessOption
 
 	_ = headerFunc()
 
-	s.appendProcessBorder(s.logProcessVerticalBorderSign, style)
+	s.appendProcessBorder(s.LogProcessVerticalBorderSign(), style)
 
 	logProcess := &logProcessDescriptor{StartedAt: time.Now(), Msg: processMessage, GitlabCollapsibleSectionId: currentGitlabCollapsibleSectionId}
 	s.activeLogProcesses = append(s.activeLogProcesses, logProcess)
@@ -250,7 +250,7 @@ func (s *Stream) logProcessStepEnd(processMessage string, options LogProcessOpti
 		})
 	}
 
-	processMessageFunc = s.decorateByWithExtraProcessBorder(s.logProcessVerticalAndRightBorderSign, style, processMessageFunc)
+	processMessageFunc = s.decorateByWithExtraProcessBorder(s.LogProcessVerticalAndRightBorderSign(), style, processMessageFunc)
 	processMessageFunc = s.decorateByWithoutLastProcessBorder(processMessageFunc)
 
 	_ = processMessageFunc()
@@ -264,7 +264,7 @@ func (s *Stream) applyInfoLogProcessStep(userError error, infoSectionFunc func(e
 		})
 	}
 
-	infoHeaderFunc = s.decorateByWithExtraProcessBorder(s.logProcessVerticalAndRightBorderSign, style, infoHeaderFunc)
+	infoHeaderFunc = s.decorateByWithExtraProcessBorder(s.LogProcessVerticalAndRightBorderSign(), style, infoHeaderFunc)
 	infoHeaderFunc = s.decorateByWithoutLastProcessBorder(infoHeaderFunc)
 
 	_ = infoHeaderFunc()
@@ -278,7 +278,7 @@ func (s *Stream) applyInfoLogProcessStep(userError error, infoSectionFunc func(e
 		infoFunc = s.decorateByDoErrorWithIndent(infoFunc)
 	}
 
-	infoFunc = s.decorateByWithExtraProcessBorder(s.logProcessVerticalBorderSign, style, infoFunc)
+	infoFunc = s.decorateByWithExtraProcessBorder(s.LogProcessVerticalBorderSign(), style, infoFunc)
 	infoFunc = s.decorateByWithoutLastProcessBorder(infoFunc)
 
 	_ = infoFunc()
@@ -313,7 +313,7 @@ func (s *Stream) logProcessEnd(options LogProcessOptions) {
 		})
 	}
 
-	footerFunc = s.decorateByWithExtraProcessBorder(s.logProcessUpAndRightBorderSign, style, footerFunc)
+	footerFunc = s.decorateByWithExtraProcessBorder(s.LogProcessUpAndRightBorderSign(), style, footerFunc)
 
 	_ = footerFunc()
 
@@ -355,7 +355,7 @@ func (s *Stream) logProcessFail(options LogProcessOptions) {
 		})
 	}
 
-	footerFunc = s.decorateByWithExtraProcessBorder(s.logProcessUpAndRightBorderSign, style, footerFunc)
+	footerFunc = s.decorateByWithExtraProcessBorder(s.LogProcessUpAndRightBorderSign(), style, footerFunc)
 
 	_ = footerFunc()
 

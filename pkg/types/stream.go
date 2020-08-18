@@ -59,4 +59,5 @@ type StreamsInterface interface {
 
 	EnableLogProcessBorder()
 	DisableLogProcessBorder()
+	IsLogProcessBorderEnabled() bool
 }
