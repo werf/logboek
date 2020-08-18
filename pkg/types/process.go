@@ -12,6 +12,7 @@ type LogBlockInterface interface {
 
 type LogBlockOptionsInterface interface {
 	DisableIfLevelNotAccepted()
+	Mute()
 	WithIndent()
 	WithoutLogOptionalLn()
 	Style(*stylePkg.Style)
@@ -27,6 +28,7 @@ type LogProcessInlineInterface interface {
 
 type LogProcessInlineOptionsInterface interface {
 	DisableIfLevelNotAccepted()
+	Mute()
 	Style(*stylePkg.Style)
 }
 
@@ -44,6 +46,7 @@ type LogProcessInterface interface {
 
 type LogProcessOptionsInterface interface {
 	DisableIfLevelNotAccepted()
+	Mute()
 	WithIndent()
 	WithoutLogOptionalLn()
 	WithoutElapsedTime()

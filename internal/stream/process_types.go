@@ -44,7 +44,7 @@ func (l *LogBlock) DoError(f func() error) error {
 		} else {
 			return f()
 		}
-	} else if l.stream.IsMuted() {
+	} else if l.options.mute || l.stream.IsMuted() {
 		return f()
 	}
 
@@ -53,6 +53,7 @@ func (l *LogBlock) DoError(f func() error) error {
 
 type LogBlockOptions struct {
 	disableIfLevelNotAccepted bool
+	mute                      bool
 	withIndent                bool
 	withoutLogOptionalLn      bool
 	style                     *stylePkg.Style
@@ -60,6 +61,10 @@ type LogBlockOptions struct {
 
 func (opts *LogBlockOptions) DisableIfLevelNotAccepted() {
 	opts.disableIfLevelNotAccepted = true
+}
+
+func (opts *LogBlockOptions) Mute() {
+	opts.mute = true
 }
 
 func (opts *LogBlockOptions) WithIndent() {
@@ -113,7 +118,7 @@ func (l *LogProcessInline) DoError(f func() error) error {
 		} else {
 			return f()
 		}
-	} else if l.stream.IsMuted() {
+	} else if l.options.mute || l.stream.IsMuted() {
 		return f()
 	}
 
@@ -122,11 +127,16 @@ func (l *LogProcessInline) DoError(f func() error) error {
 
 type LogProcessInlineOptions struct {
 	disableIfLevelNotAccepted bool
+	mute                      bool
 	style                     *stylePkg.Style
 }
 
 func (opts *LogProcessInlineOptions) DisableIfLevelNotAccepted() {
 	opts.disableIfLevelNotAccepted = true
+}
+
+func (opts *LogProcessInlineOptions) Mute() {
+	opts.mute = true
 }
 
 func (opts *LogProcessInlineOptions) Style(s *stylePkg.Style) {
@@ -182,7 +192,7 @@ func (l *LogProcess) DoError(f func() error) error {
 		} else {
 			return f()
 		}
-	} else if l.stream.IsMuted() {
+	} else if l.options.mute || l.stream.IsMuted() {
 		return f()
 	}
 
@@ -253,6 +263,7 @@ func (l *LogProcess) Fail() {
 
 type LogProcessOptions struct {
 	disableIfLevelNotAccepted bool
+	mute                      bool
 	withIndent                bool
 	withoutLogOptionalLn      bool
 	withoutElapsedTime        bool
@@ -263,6 +274,10 @@ type LogProcessOptions struct {
 
 func (opts *LogProcessOptions) DisableIfLevelNotAccepted() {
 	opts.disableIfLevelNotAccepted = true
+}
+
+func (opts *LogProcessOptions) Mute() {
+	opts.mute = true
 }
 
 func (opts *LogProcessOptions) WithIndent() {
