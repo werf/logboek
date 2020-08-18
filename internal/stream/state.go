@@ -548,3 +548,7 @@ func (s *State) formatWithStyle(style *stylePkg.Style, format string, a ...inter
 		return style.Colorize(format, a...)
 	}
 }
+
+func (s *State) reset() {
+	s.cursorState = newCursorState()
+}

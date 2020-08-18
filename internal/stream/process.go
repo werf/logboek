@@ -292,6 +292,11 @@ func (s *Stream) logProcessEnd(options LogProcessOptions) {
 
 	s.popProcessBorder()
 
+	// Logger reset has occurred
+	if len(s.activeLogProcesses) == 0 {
+		return
+	}
+
 	logProcess := s.activeLogProcesses[len(s.activeLogProcesses)-1]
 	s.activeLogProcesses = s.activeLogProcesses[:len(s.activeLogProcesses)-1]
 
@@ -334,6 +339,11 @@ func (s *Stream) logProcessFail(options LogProcessOptions) {
 
 	s.popProcessBorder()
 
+	// Logger reset has occurred
+	if len(s.activeLogProcesses) == 0 {
+		return
+	}
+
 	logProcess := s.activeLogProcesses[len(s.activeLogProcesses)-1]
 	s.activeLogProcesses = s.activeLogProcesses[:len(s.activeLogProcesses)-1]
 
@@ -365,6 +375,12 @@ func (s *Stream) logProcessFail(options LogProcessOptions) {
 
 	if !options.withoutLogOptionalLn {
 		s.EnableOptionalLn()
+	}
+}
+
+func (s *Stream) resetProcesses() {
+	for len(s.activeLogProcesses) != 0 {
+		s.logProcessEnd(LogProcessOptions{})
 	}
 }
 

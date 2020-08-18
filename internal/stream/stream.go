@@ -168,6 +168,11 @@ func (s *Stream) applyOptionalLn() {
 	_, _ = s.logFBase(s.processOptionalLn())
 }
 
+func (s *Stream) Reset() {
+	s.resetProcesses()
+	s.State.reset()
+}
+
 func splitData(data []byte, chunkSize int) [][]rune {
 	buf := bytes.Runes(data)
 	chunks := make([][]rune, 0, len(buf)/chunkSize+1)
