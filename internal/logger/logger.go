@@ -108,7 +108,16 @@ func (l *Logger) NewSubLogger(outStream, errStream io.Writer) types.LoggerInterf
 	subLogger := NewLogger(outStream, errStream)
 	subLogger.setCommonStreamState(l.commonStreamState.SubState())
 	subLogger.SetAcceptedLevel(l.acceptedLevel)
+
+	for lvl, manager := range l.levelManager {
+		subLogger.levelManager[lvl].style = manager.style
+	}
+
 	return subLogger
+}
+
+func (l *Logger) GetStreamsSettingsFrom(l2 types.LoggerInterface) {
+	l.setCommonStreamState(l2.(*Logger).commonStreamState.SharedState())
 }
 
 func (l *Logger) Reset() {

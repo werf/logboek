@@ -26,6 +26,7 @@ type LoggerInterface interface {
 	ProxyErrStream() io.Writer
 
 	NewSubLogger(outStream, errStream io.Writer) LoggerInterface
+	GetStreamsSettingsFrom(l LoggerInterface)
 
 	Reset()
 }
