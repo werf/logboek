@@ -19,7 +19,7 @@ func (s proxyStream) Write(data []byte) (int, error) {
 		msg := string(chunk)
 
 		if s.Stream.IsLineWrappingEnabled() {
-			msg = fitter.FitText(msg, &s.State.State, s.ContentWidth(), true, true)
+			msg = fitter.FitText(msg, &s.StateAndModes.State, s.ContentWidth(), true, true)
 		}
 
 		_, err := s.processAndLogFBase("%s", msg)

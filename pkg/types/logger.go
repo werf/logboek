@@ -31,4 +31,6 @@ type LoggerInterface interface {
 	GetStreamsSettingsFrom(l LoggerInterface)
 
 	Reset()
+	ResetState()
+	ResetModes()
 }

@@ -12,19 +12,19 @@ import (
 type Logger struct {
 	*Manager
 
-	acceptedLevel     level.Level
-	levelManager      map[level.Level]*Manager
-	outStream         *stream.Stream
-	errStream         *stream.Stream
-	commonStreamState *stream.State
+	acceptedLevel             level.Level
+	levelManager              map[level.Level]*Manager
+	outStream                 *stream.Stream
+	errStream                 *stream.Stream
+	commonStreamStateAndModes *stream.StateAndModes
 }
 
 func NewLogger(outStream, errStream io.Writer) *Logger {
 	l := &Logger{}
 
-	l.commonStreamState = stream.NewStreamState()
-	l.outStream = stream.NewStream(outStream, l.commonStreamState)
-	l.errStream = stream.NewStream(errStream, l.commonStreamState)
+	l.commonStreamStateAndModes = stream.NewStreamState()
+	l.outStream = stream.NewStream(outStream, l.commonStreamStateAndModes)
+	l.errStream = stream.NewStream(errStream, l.commonStreamStateAndModes)
 	l.initLevelManager()
 
 	return l
@@ -39,10 +39,10 @@ func (l *Logger) initLevelManager() {
 	l.Manager = l.levelManager[level.Default]
 }
 
-func (l *Logger) setCommonStreamState(state *stream.State) {
-	l.commonStreamState = state
-	l.outStream.State = state
-	l.errStream.State = state
+func (l *Logger) setCommonStreamState(state *stream.StateAndModes) {
+	l.commonStreamStateAndModes = state
+	l.outStream.StateAndModes = state
+	l.errStream.StateAndModes = state
 }
 
 func (l *Logger) getLevelManager(lvl level.Level) *Manager {
@@ -90,7 +90,7 @@ func (l *Logger) IsAcceptedLevel(lvl level.Level) bool {
 }
 
 func (l *Logger) Streams() types.StreamsInterface {
-	return l.commonStreamState
+	return l.commonStreamStateAndModes
 }
 
 func (l *Logger) FitText(text string, options types.FitTextOptions) string {
@@ -98,7 +98,7 @@ func (l *Logger) FitText(text string, options types.FitTextOptions) string {
 }
 
 func (l *Logger) Colorize(style *stylePkg.Style, format string, a ...interface{}) string {
-	if !l.commonStreamState.IsStyleEnabled() {
+	if !l.commonStreamStateAndModes.IsStyleEnabled() {
 		return stylePkg.SimpleFormat(format, a...)
 	} else {
 		return style.Colorize(format, a...)
@@ -115,7 +115,7 @@ func (l *Logger) ProxyErrStream() io.Writer {
 
 func (l *Logger) NewSubLogger(outStream, errStream io.Writer) types.LoggerInterface {
 	subLogger := NewLogger(outStream, errStream)
-	subLogger.setCommonStreamState(l.commonStreamState.SubState())
+	subLogger.setCommonStreamState(l.commonStreamStateAndModes.SubState())
 	subLogger.SetAcceptedLevel(l.acceptedLevel)
 
 	for lvl, manager := range l.levelManager {
@@ -126,9 +126,17 @@ func (l *Logger) NewSubLogger(outStream, errStream io.Writer) types.LoggerInterf
 }
 
 func (l *Logger) GetStreamsSettingsFrom(l2 types.LoggerInterface) {
-	l.setCommonStreamState(l2.(*Logger).commonStreamState.SharedState())
+	l.setCommonStreamState(l2.(*Logger).commonStreamStateAndModes.SharedState())
 }
 
 func (l *Logger) Reset() {
 	l.outStream.Reset()
+}
+
+func (l *Logger) ResetState() {
+	l.outStream.ResetState()
+}
+
+func (l *Logger) ResetModes() {
+	l.outStream.ResetModes()
 }
