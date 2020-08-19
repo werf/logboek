@@ -378,7 +378,7 @@ func (s *Stream) logProcessFail(options LogProcessOptions) {
 	}
 }
 
-func (s *Stream) resetProcesses() {
+func (s *Stream) endAllActiveProcesses() {
 	for len(s.activeLogProcesses) != 0 {
 		s.logProcessEnd(LogProcessOptions{})
 	}

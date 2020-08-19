@@ -11,35 +11,57 @@ import (
 	stylePkg "github.com/werf/logboek/pkg/style"
 )
 
-type State struct {
-	width               int
-	indentWidth         int
-	isOptionalLnEnabled bool
+type StateAndModes struct {
+	width int
 
+	modes
+	baseState
 	fitter.State
-	streamMode
 	cursorState
 	processState
 	tagState
 	prefixState
 }
 
-func NewStreamState() *State {
-	return &State{
-		streamMode:   newStreamMode(),
-		cursorState:  newCursorState(),
-		processState: newProcessState(),
-		prefixState:  newPrefixState(),
-	}
+func NewStreamState() *StateAndModes {
+	s := &StateAndModes{}
+	s.initModes()
+	s.initState()
+	return s
 }
 
-func (s *State) SubState() *State {
+func (s *StateAndModes) initModes() {
+	s.modes = newModes()
+}
+
+func (s *StateAndModes) initState() {
+	s.baseState = newBaseState()
+	s.State = fitter.NewState()
+	s.cursorState = newCursorState()
+	s.processState = newProcessState()
+	s.prefixState = newPrefixState()
+}
+
+func (s *StateAndModes) reset() {
+	s.resetState()
+	s.resetModes()
+}
+
+func (s *StateAndModes) resetState() {
+	s.initState()
+}
+
+func (s *StateAndModes) resetModes() {
+	s.initModes()
+}
+
+func (s *StateAndModes) SubState() *StateAndModes {
 	ss := s.SharedState()
 	ss.width = s.ContentWidth()
 	return ss
 }
 
-func (s *State) SharedState() *State {
+func (s *StateAndModes) SharedState() *StateAndModes {
 	ss := s.clone()
 	ss.isOptionalLnEnabled = false
 	ss.State = fitter.State{}
@@ -48,13 +70,22 @@ func (s *State) SharedState() *State {
 	return ss
 }
 
-func (s *State) DisablePrettyLog() {
+func (s *StateAndModes) DisablePrettyLog() {
 	s.DisableProxyStreamDataFormatting()
 	s.DisableLogProcessBorder()
 	s.DisableLineWrapping()
 }
 
-type streamMode struct {
+type baseState struct {
+	indentWidth         int
+	isOptionalLnEnabled bool
+}
+
+func newBaseState() baseState {
+	return baseState{}
+}
+
+type modes struct {
 	isMuted                            bool
 	isStyleEnabled                     bool
 	isLineWrappingEnabled              bool
@@ -64,8 +95,8 @@ type streamMode struct {
 	isLogProcessBorderEnabled          bool
 }
 
-func newStreamMode() streamMode {
-	return streamMode{
+func newModes() modes {
+	return modes{
 		isStyleEnabled:                     !color.NoColor,
 		isLineWrappingEnabled:              true,
 		isProxyStreamDataFormattingEnabled: true,
@@ -74,65 +105,65 @@ func newStreamMode() streamMode {
 	}
 }
 
-func (s *State) Mute() {
+func (s *StateAndModes) Mute() {
 	s.isMuted = true
 }
 
-func (s *State) Unmute() {
+func (s *StateAndModes) Unmute() {
 	s.isMuted = false
 }
 
-func (s *State) IsMuted() bool {
+func (s *StateAndModes) IsMuted() bool {
 	return s.isMuted
 }
 
-func (s *State) EnableGitlabCollapsibleSections() {
+func (s *StateAndModes) EnableGitlabCollapsibleSections() {
 	s.isGitlabCollapsibleSectionsEnabled = true
 }
 
-func (s *State) DisableGitlabCollapsibleSections() {
+func (s *StateAndModes) DisableGitlabCollapsibleSections() {
 	s.isGitlabCollapsibleSectionsEnabled = false
 }
 
-func (s *State) IsGitlabCollapsibleSections() bool {
+func (s *StateAndModes) IsGitlabCollapsibleSections() bool {
 	return s.isGitlabCollapsibleSectionsEnabled
 }
 
-func (s *State) EnableLogProcessBorder() {
+func (s *StateAndModes) EnableLogProcessBorder() {
 	s.isLogProcessBorderEnabled = true
 }
 
-func (s *State) DisableLogProcessBorder() {
+func (s *StateAndModes) DisableLogProcessBorder() {
 	s.isLogProcessBorderEnabled = true
 }
 
-func (s *State) IsLogProcessBorderEnabled() bool {
+func (s *StateAndModes) IsLogProcessBorderEnabled() bool {
 	return s.isLogProcessBorderEnabled
 }
 
-func (s *State) DoWithProxyStreamDataFormatting(f func()) {
+func (s *StateAndModes) DoWithProxyStreamDataFormatting(f func()) {
 	_ = s.doErrorWithProxyStreamDataFormatting(true, func() error {
 		f()
 		return nil
 	})
 }
 
-func (s *State) DoErrorWithProxyStreamDataFormatting(f func() error) error {
+func (s *StateAndModes) DoErrorWithProxyStreamDataFormatting(f func() error) error {
 	return s.doErrorWithProxyStreamDataFormatting(true, f)
 }
 
-func (s *State) DoWithoutProxyStreamDataFormatting(f func()) {
+func (s *StateAndModes) DoWithoutProxyStreamDataFormatting(f func()) {
 	_ = s.doErrorWithProxyStreamDataFormatting(false, func() error {
 		f()
 		return nil
 	})
 }
 
-func (s *State) DoErrorWithoutProxyStreamDataFormatting(f func() error) error {
+func (s *StateAndModes) DoErrorWithoutProxyStreamDataFormatting(f func() error) error {
 	return s.doErrorWithProxyStreamDataFormatting(false, f)
 }
 
-func (s *State) doErrorWithProxyStreamDataFormatting(value bool, f func() error) error {
+func (s *StateAndModes) doErrorWithProxyStreamDataFormatting(value bool, f func() error) error {
 	savedValue := s.isProxyStreamDataFormattingEnabled
 	s.isProxyStreamDataFormattingEnabled = value
 	err := f()
@@ -141,43 +172,43 @@ func (s *State) doErrorWithProxyStreamDataFormatting(value bool, f func() error)
 	return err
 }
 
-func (s *State) EnableProxyStreamDataFormatting() {
+func (s *StateAndModes) EnableProxyStreamDataFormatting() {
 	s.isProxyStreamDataFormattingEnabled = true
 }
 
-func (s *State) DisableProxyStreamDataFormatting() {
+func (s *StateAndModes) DisableProxyStreamDataFormatting() {
 	s.isProxyStreamDataFormattingEnabled = false
 }
 
-func (s *State) IsProxyStreamDataFormattingEnabled() bool {
+func (s *StateAndModes) IsProxyStreamDataFormattingEnabled() bool {
 	return s.isProxyStreamDataFormattingEnabled
 }
 
-func (s *State) EnableLineWrapping() {
+func (s *StateAndModes) EnableLineWrapping() {
 	s.isLineWrappingEnabled = true
 }
 
-func (s *State) DisableLineWrapping() {
+func (s *StateAndModes) DisableLineWrapping() {
 	s.isLineWrappingEnabled = false
 }
 
-func (s *State) IsLineWrappingEnabled() bool {
+func (s *StateAndModes) IsLineWrappingEnabled() bool {
 	return s.isLineWrappingEnabled
 }
 
-func (s *State) EnableStyle() {
+func (s *StateAndModes) EnableStyle() {
 	s.isStyleEnabled = true
 }
 
-func (s *State) DisableStyle() {
+func (s *StateAndModes) DisableStyle() {
 	s.isStyleEnabled = false
 }
 
-func (s *State) IsStyleEnabled() bool {
+func (s *StateAndModes) IsStyleEnabled() bool {
 	return s.isStyleEnabled
 }
 
-func (s *State) processService() string {
+func (s *StateAndModes) processService() string {
 	var result string
 
 	result += s.formattedPrefix()
@@ -187,30 +218,30 @@ func (s *State) processService() string {
 	return result
 }
 
-func (s *State) Width() int {
+func (s *StateAndModes) Width() int {
 	return s.width
 }
 
-func (s *State) SetWidth(value int) {
+func (s *StateAndModes) SetWidth(value int) {
 	s.width = value
 }
 
-func (s *State) ContentWidth() int {
+func (s *StateAndModes) ContentWidth() int {
 	return s.width - s.ServiceWidth()
 }
 
-func (s *State) ServiceWidth() int {
+func (s *StateAndModes) ServiceWidth() int {
 	return s.prefixWidth() + s.processBordersBlockWidth() + s.tagPartWidth() + s.indentWidth
 }
 
-func (s *State) DoWithIndent(f func()) {
+func (s *StateAndModes) DoWithIndent(f func()) {
 	_ = s.DoErrorWithIndent(func() error {
 		f()
 		return nil
 	})
 }
 
-func (s *State) DoErrorWithIndent(f func() error) error {
+func (s *StateAndModes) DoErrorWithIndent(f func() error) error {
 	s.IncreaseIndent()
 	err := f()
 	s.DecreaseIndent()
@@ -218,14 +249,14 @@ func (s *State) DoErrorWithIndent(f func() error) error {
 	return err
 }
 
-func (s *State) DoWithoutIndent(f func()) {
+func (s *StateAndModes) DoWithoutIndent(f func()) {
 	_ = s.DoErrorWithoutIndent(func() error {
 		f()
 		return nil
 	})
 }
 
-func (s *State) DoErrorWithoutIndent(f func() error) error {
+func (s *StateAndModes) DoErrorWithoutIndent(f func() error) error {
 	savedIndentWidth := s.indentWidth
 	s.indentWidth = 0
 	err := f()
@@ -234,12 +265,12 @@ func (s *State) DoErrorWithoutIndent(f func() error) error {
 	return err
 }
 
-func (s *State) IncreaseIndent() {
+func (s *StateAndModes) IncreaseIndent() {
 	s.indentWidth += 2
 	s.DisableOptionalLn()
 }
 
-func (s *State) DecreaseIndent() {
+func (s *StateAndModes) DecreaseIndent() {
 	if s.indentWidth == 0 {
 		return
 	}
@@ -248,21 +279,21 @@ func (s *State) DecreaseIndent() {
 	s.DisableOptionalLn()
 }
 
-func (s *State) ResetIndent() {
+func (s *StateAndModes) ResetIndent() {
 	s.indentWidth = 0
 }
 
-func (s *State) decorateByDoErrorWithIndent(f func() error) func() error {
+func (s *StateAndModes) decorateByDoErrorWithIndent(f func() error) func() error {
 	return func() error {
 		return s.DoErrorWithIndent(f)
 	}
 }
 
-func (s *State) EnableOptionalLn() {
+func (s *StateAndModes) EnableOptionalLn() {
 	s.isOptionalLnEnabled = true
 }
 
-func (s *State) DisableOptionalLn() {
+func (s *StateAndModes) DisableOptionalLn() {
 	s.isOptionalLnEnabled = false
 }
 
@@ -289,7 +320,7 @@ func newProcessState() processState {
 	return processState{}
 }
 
-func (s *State) LogProcessDownAndRightBorderSign() string {
+func (s *StateAndModes) LogProcessDownAndRightBorderSign() string {
 	if s.isLogProcessBorderEnabled {
 		return "┌"
 	}
@@ -297,7 +328,7 @@ func (s *State) LogProcessDownAndRightBorderSign() string {
 	return ""
 }
 
-func (s *State) LogProcessVerticalBorderSign() string {
+func (s *StateAndModes) LogProcessVerticalBorderSign() string {
 	if s.isLogProcessBorderEnabled {
 		return "│"
 	}
@@ -305,7 +336,7 @@ func (s *State) LogProcessVerticalBorderSign() string {
 	return ""
 }
 
-func (s *State) LogProcessVerticalAndRightBorderSign() string {
+func (s *StateAndModes) LogProcessVerticalAndRightBorderSign() string {
 	if s.isLogProcessBorderEnabled {
 		return "├"
 	}
@@ -313,7 +344,7 @@ func (s *State) LogProcessVerticalAndRightBorderSign() string {
 	return ""
 }
 
-func (s *State) LogProcessUpAndRightBorderSign() string {
+func (s *StateAndModes) LogProcessUpAndRightBorderSign() string {
 	if s.isLogProcessBorderEnabled {
 		return "└"
 	}
@@ -321,7 +352,7 @@ func (s *State) LogProcessUpAndRightBorderSign() string {
 	return ""
 }
 
-func (s *State) ProcessesBorderBetweenIndentWidth() int {
+func (s *StateAndModes) ProcessesBorderBetweenIndentWidth() int {
 	if s.isLogProcessBorderEnabled {
 		return 1
 	}
@@ -329,7 +360,7 @@ func (s *State) ProcessesBorderBetweenIndentWidth() int {
 	return 0
 }
 
-func (s *State) ProcessesBorderIndentWidth() int {
+func (s *StateAndModes) ProcessesBorderIndentWidth() int {
 	if s.isLogProcessBorderEnabled {
 		return 1
 	}
@@ -337,13 +368,13 @@ func (s *State) ProcessesBorderIndentWidth() int {
 	return 0
 }
 
-func (s *State) decorateByWithExtraProcessBorder(colorlessBorder string, style *stylePkg.Style, decoratedFunc func() error) func() error {
+func (s *StateAndModes) decorateByWithExtraProcessBorder(colorlessBorder string, style *stylePkg.Style, decoratedFunc func() error) func() error {
 	return func() error {
 		return s.withExtraProcessBorder(colorlessBorder, style, decoratedFunc)
 	}
 }
 
-func (s *State) withExtraProcessBorder(colorlessValue string, style *stylePkg.Style, decoratedFunc func() error) error {
+func (s *StateAndModes) withExtraProcessBorder(colorlessValue string, style *stylePkg.Style, decoratedFunc func() error) error {
 	s.appendProcessBorder(colorlessValue, style)
 	err := decoratedFunc()
 	s.popProcessBorder()
@@ -351,13 +382,13 @@ func (s *State) withExtraProcessBorder(colorlessValue string, style *stylePkg.St
 	return err
 }
 
-func (s *State) decorateByWithoutLastProcessBorder(decoratedFunc func() error) func() error {
+func (s *StateAndModes) decorateByWithoutLastProcessBorder(decoratedFunc func() error) func() error {
 	return func() error {
 		return s.withoutLastProcessBorder(decoratedFunc)
 	}
 }
 
-func (s *State) withoutLastProcessBorder(f func() error) error {
+func (s *StateAndModes) withoutLastProcessBorder(f func() error) error {
 	oldBorderValue := s.processesBorderValues[len(s.processesBorderValues)-1]
 	s.processesBorderValues = s.processesBorderValues[:len(s.processesBorderValues)-1]
 
@@ -372,12 +403,12 @@ func (s *State) withoutLastProcessBorder(f func() error) error {
 	return err
 }
 
-func (s *State) appendProcessBorder(colorlessValue string, style *stylePkg.Style) {
+func (s *StateAndModes) appendProcessBorder(colorlessValue string, style *stylePkg.Style) {
 	s.processesBorderValues = append(s.processesBorderValues, colorlessValue)
 	s.processesBorderFormattedValues = append(s.processesBorderFormattedValues, s.formatWithStyle(style, colorlessValue))
 }
 
-func (s *State) popProcessBorder() {
+func (s *StateAndModes) popProcessBorder() {
 	if len(s.processesBorderValues) == 0 {
 		return
 	}
@@ -386,7 +417,7 @@ func (s *State) popProcessBorder() {
 	s.processesBorderFormattedValues = s.processesBorderFormattedValues[:len(s.processesBorderFormattedValues)-1]
 }
 
-func (s *State) formattedProcessBorders() string {
+func (s *StateAndModes) formattedProcessBorders() string {
 	if len(s.processesBorderValues) == 0 {
 		return ""
 	}
@@ -394,7 +425,7 @@ func (s *State) formattedProcessBorders() string {
 	return strings.Join(s.processesBorderFormattedValues, strings.Repeat(" ", s.ProcessesBorderBetweenIndentWidth())) + strings.Repeat(" ", s.ProcessesBorderIndentWidth())
 }
 
-func (s *State) processBordersBlockWidth() int {
+func (s *StateAndModes) processBordersBlockWidth() int {
 	if len(s.processesBorderValues) == 0 {
 		return 0
 	}
@@ -410,14 +441,14 @@ type tagState struct {
 
 const tagIndentWidth = 2
 
-func (s *State) DoWithTag(value string, style *stylePkg.Style, f func()) {
+func (s *StateAndModes) DoWithTag(value string, style *stylePkg.Style, f func()) {
 	_ = s.DoErrorWithTag(value, style, func() error {
 		f()
 		return nil
 	})
 }
 
-func (s *State) DoErrorWithTag(value string, style *stylePkg.Style, f func() error) error {
+func (s *StateAndModes) DoErrorWithTag(value string, style *stylePkg.Style, f func() error) error {
 	savedTag := s.tagValue
 	savedStyle := s.tagStyle
 	s.SetTagWithStyle(value, style)
@@ -427,24 +458,24 @@ func (s *State) DoErrorWithTag(value string, style *stylePkg.Style, f func() err
 	return err
 }
 
-func (s *State) SetTag(value string) {
+func (s *StateAndModes) SetTag(value string) {
 	s.tagValue = value
 }
 
-func (s *State) SetTagStyle(style *stylePkg.Style) {
+func (s *StateAndModes) SetTagStyle(style *stylePkg.Style) {
 	s.tagStyle = style
 }
 
-func (s *State) SetTagWithStyle(value string, style *stylePkg.Style) {
+func (s *StateAndModes) SetTagWithStyle(value string, style *stylePkg.Style) {
 	s.SetTagStyle(style)
 	s.SetTag(value)
 }
 
-func (s *State) ResetTag() {
+func (s *StateAndModes) ResetTag() {
 	s.tagState = tagState{}
 }
 
-func (s *State) tagPartWidth() int {
+func (s *StateAndModes) tagPartWidth() int {
 	if s.tagValue != "" {
 		return len(s.tagValue) + tagIndentWidth
 	}
@@ -452,7 +483,7 @@ func (s *State) tagPartWidth() int {
 	return 0
 }
 
-func (s *State) formattedTag() string {
+func (s *StateAndModes) formattedTag() string {
 	if len(s.tagValue) == 0 {
 		return ""
 	}
@@ -475,38 +506,38 @@ func newPrefixState() prefixState {
 	}
 }
 
-func (s *State) EnablePrefixWithTime() {
+func (s *StateAndModes) EnablePrefixWithTime() {
 	s.isPrefixWithTimeEnabled = true
 }
 
-func (s *State) DisablePrefixWithTime() {
+func (s *StateAndModes) DisablePrefixWithTime() {
 	s.isPrefixWithTimeEnabled = false
 }
 
-func (s *State) IsPrefixWithTimeEnabled() bool {
+func (s *StateAndModes) IsPrefixWithTimeEnabled() bool {
 	return s.isPrefixWithTimeEnabled
 }
 
-func (s *State) ResetPrefixTime() {
+func (s *StateAndModes) ResetPrefixTime() {
 	s.prefixTime = time.Now()
 }
 
-func (s *State) SetPrefix(value string) {
+func (s *StateAndModes) SetPrefix(value string) {
 	s.ResetPrefix()
 	s.prefix = value
 }
 
-func (s *State) SetPrefixStyle(style *stylePkg.Style) {
+func (s *StateAndModes) SetPrefixStyle(style *stylePkg.Style) {
 	s.prefixStyle = style
 }
 
-func (s *State) ResetPrefix() {
+func (s *StateAndModes) ResetPrefix() {
 	s.prefix = ""
 	s.prefixStyle = nil
 	s.isPrefixWithTimeEnabled = false
 }
 
-func (s *State) formattedPrefix() string {
+func (s *StateAndModes) formattedPrefix() string {
 	if s.preparePrefixValue() == "" {
 		return ""
 	}
@@ -514,7 +545,7 @@ func (s *State) formattedPrefix() string {
 	return s.formatWithStyle(s.prefixStyle, s.preparePrefixValue())
 }
 
-func (s *State) preparePrefixValue() string {
+func (s *StateAndModes) preparePrefixValue() string {
 	if s.isPrefixWithTimeEnabled {
 		timeString := time.Since(s.prefixTime).String()
 		timeStringRunes := []rune(timeString)
@@ -531,11 +562,11 @@ func (s *State) preparePrefixValue() string {
 	return s.prefix
 }
 
-func (s *State) prefixWidth() int {
+func (s *StateAndModes) prefixWidth() int {
 	return len([]rune(s.preparePrefixValue()))
 }
 
-func (s *State) processOptionalLn() string {
+func (s *StateAndModes) processOptionalLn() string {
 	var result string
 
 	if s.isOptionalLnEnabled {
@@ -549,7 +580,7 @@ func (s *State) processOptionalLn() string {
 	return result
 }
 
-func (s *State) formatWithStyle(style *stylePkg.Style, format string, a ...interface{}) string {
+func (s *StateAndModes) formatWithStyle(style *stylePkg.Style, format string, a ...interface{}) string {
 	if !s.isStyleEnabled || style == nil {
 		return stylePkg.SimpleFormat(format, a...)
 	} else {
@@ -557,11 +588,7 @@ func (s *State) formatWithStyle(style *stylePkg.Style, format string, a ...inter
 	}
 }
 
-func (s *State) clone() *State {
+func (s *StateAndModes) clone() *StateAndModes {
 	sClone := *s
 	return &sClone
-}
-
-func (s *State) reset() {
-	s.cursorState = newCursorState()
 }

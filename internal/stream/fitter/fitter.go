@@ -26,6 +26,10 @@ type State struct {
 	colorState
 }
 
+func NewState() State {
+	return State{}
+}
+
 type wrapperState struct {
 	sequenceStack
 }

@@ -18,13 +18,13 @@ const defaultWidth = 140
 
 type Stream struct {
 	io.Writer
-	*State
+	*StateAndModes
 }
 
-func NewStream(w io.Writer, state *State) *Stream {
+func NewStream(w io.Writer, state *StateAndModes) *Stream {
 	s := &Stream{
-		Writer: w,
-		State:  state,
+		Writer:        w,
+		StateAndModes: state,
 	}
 	s.initWidth()
 	return s
@@ -169,8 +169,17 @@ func (s *Stream) applyOptionalLn() {
 }
 
 func (s *Stream) Reset() {
-	s.resetProcesses()
-	s.State.reset()
+	s.ResetState()
+	s.ResetModes()
+}
+
+func (s *Stream) ResetState() {
+	s.endAllActiveProcesses()
+	s.StateAndModes.resetState()
+}
+
+func (s *Stream) ResetModes() {
+	s.StateAndModes.resetModes()
 }
 
 func splitData(data []byte, chunkSize int) [][]rune {

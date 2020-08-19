@@ -158,3 +158,11 @@ func Context(ctx context.Context) types.LoggerInterface {
 func Reset() {
 	defaultLogger.Reset()
 }
+
+func ResetState() {
+	defaultLogger.ResetState()
+}
+
+func ResetModes() {
+	defaultLogger.ResetModes()
+}
