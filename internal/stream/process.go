@@ -403,5 +403,5 @@ func (s *Stream) gitlabCollapsibleSectionStart(sectionId, processMsg string) {
 
 func (s *Stream) gitlabCollapsibleSectionEnd(sectionId string) {
 	s.isGitlabCollapsibleSectionActive = false
-	_, _ = s.logFBase("section_end:%d:%s\r\x1b[0K", time.Now().Unix(), sectionId)
+	_, _ = s.logFBase("section_end:%d:%s\r\x1b[0K\n", time.Now().Unix(), sectionId)
 }
