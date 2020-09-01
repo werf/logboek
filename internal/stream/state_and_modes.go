@@ -310,10 +310,9 @@ func newCursorState() cursorState {
 }
 
 type processState struct {
-	processesBorderValues            []string
-	processesBorderFormattedValues   []string
-	activeLogProcesses               []*logProcessDescriptor
-	isGitlabCollapsibleSectionActive bool
+	processesBorderValues          []string
+	processesBorderFormattedValues []string
+	activeLogProcesses             []*logProcessDescriptor
 }
 
 func newProcessState() processState {
