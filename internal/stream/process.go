@@ -50,11 +50,6 @@ func (s *Stream) logBlock(blockMessage string, options *LogBlockOptions, blockFu
 		bodyFunc = s.decorateByDoErrorWithIndent(bodyFunc)
 	}
 
-	currentGitlabCollapsibleSectionId := s.gitlabCollapsibleSectionId(blockMessage)
-	if s.shouldGitlabCollapsibleSectionBeOpened() {
-		s.gitlabCollapsibleSectionStart(currentGitlabCollapsibleSectionId, blockMessage)
-	}
-
 	_ = s.decorateByWithExtraProcessBorder(
 		s.LogProcessDownAndRightBorderSign(),
 		style,
@@ -74,10 +69,6 @@ func (s *Stream) logBlock(blockMessage string, options *LogBlockOptions, blockFu
 		style,
 		titleFunc,
 	)()
-
-	if s.shouldGitlabCollapsibleSectionBeClosed() {
-		s.gitlabCollapsibleSectionEnd(currentGitlabCollapsibleSectionId)
-	}
 
 	if !options.withoutLogOptionalLn {
 		s.EnableOptionalLn()
@@ -389,19 +380,17 @@ func (s *Stream) gitlabCollapsibleSectionId(processMsg string) string {
 }
 
 func (s *Stream) shouldGitlabCollapsibleSectionBeOpened() bool {
-	return s.isGitlabCollapsibleSectionsEnabled && !s.isGitlabCollapsibleSectionActive
+	return s.isGitlabCollapsibleSectionsEnabled && len(s.activeLogProcesses) == 0
 }
 
 func (s *Stream) shouldGitlabCollapsibleSectionBeClosed() bool {
-	return s.isGitlabCollapsibleSectionsEnabled && s.isGitlabCollapsibleSectionActive
+	return s.isGitlabCollapsibleSectionsEnabled && len(s.activeLogProcesses) == 0
 }
 
 func (s *Stream) gitlabCollapsibleSectionStart(sectionId, processMsg string) {
-	s.isGitlabCollapsibleSectionActive = true
 	_, _ = s.logFBase("section_start:%d:%s\r\x1b[0K%s\n", time.Now().Unix(), sectionId, processMsg)
 }
 
 func (s *Stream) gitlabCollapsibleSectionEnd(sectionId string) {
-	s.isGitlabCollapsibleSectionActive = false
 	_, _ = s.logFBase("section_end:%d:%s\r\x1b[0K\n", time.Now().Unix(), sectionId)
 }
