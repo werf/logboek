@@ -126,12 +126,12 @@ func Colorize(style *style.Style, format string, a ...interface{}) string {
 	return defaultLogger.Colorize(style, format, a...)
 }
 
-func ProxyOutStream() io.Writer {
-	return defaultLogger.ProxyOutStream()
+func OutStream() io.Writer {
+	return defaultLogger.OutStream()
 }
 
-func ProxyErrStream() io.Writer {
-	return defaultLogger.ProxyErrStream()
+func ErrStream() io.Writer {
+	return defaultLogger.ErrStream()
 }
 
 func NewSubLogger(outStream, errStream io.Writer) types.LoggerInterface {

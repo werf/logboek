@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/werf/logboek/internal/stream"
 	"github.com/werf/logboek/pkg/level"
@@ -103,13 +104,30 @@ func (m *Manager) logLnCustom(style *stylePkg.Style, a ...interface{}) {
 }
 
 func (m *Manager) logFCustom(style *stylePkg.Style, format string, a ...interface{}) {
+	m.formatAndLogF(style, false, format, a...)
+}
+
+func (m *Manager) formatAndLogF(style *stylePkg.Style, cacheIncompleteLine bool, format string, a ...interface{}) {
 	if !m.IsAccepted() {
 		return
 	}
 
-	m.getStream().FormatAndLogF(style, format, a...)
+	m.getStream().FormatAndLogF(style, cacheIncompleteLine, format, a...)
 }
 
 func (m *Manager) getStream() *stream.Stream {
 	return m.logger.GetLevelStream(m.level)
+}
+
+func (m *Manager) Stream() io.Writer {
+	return proxyStream{Manager: m}
+}
+
+type proxyStream struct {
+	*Manager
+}
+
+func (s proxyStream) Write(data []byte) (int, error) {
+	s.Manager.formatAndLogF(s.Manager.style, true, "%s", string(data))
+	return len(data), nil
 }

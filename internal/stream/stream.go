@@ -1,7 +1,6 @@
 package stream
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -82,18 +81,23 @@ func fitTextWithIndent(text string, lineWidth, extraIndentWidth int, markWrapped
 	return result
 }
 
-func (s *Stream) ProxyStream() io.Writer {
-	return proxyStream{s}
-}
+const chunkSize = 256
 
-func (s *Stream) FormatAndLogF(style *stylePkg.Style, format string, a ...interface{}) {
+func (s *Stream) FormatAndLogF(style *stylePkg.Style, cacheIncompleteLine bool, format string, a ...interface{}) {
 	msg := s.formatWithStyle(style, format, a...)
 
 	if s.IsLineWrappingEnabled() {
-		msg = s.FitText(msg, types.FitTextOptions{MarkWrappedLine: true})
+		for len(msg) >= chunkSize {
+			var chunk string
+			chunk, msg = msg[:chunkSize], msg[chunkSize:]
+			s.processAndLogF(fitter.FitText(chunk, &s.StateAndModes.State, s.ContentWidth(), true, true))
+		}
+
+		s.processAndLogF(fitter.FitText(msg, &s.StateAndModes.State, s.ContentWidth(), true, cacheIncompleteLine))
+	} else {
+		s.processAndLogF(msg)
 	}
 
-	s.processAndLogF(msg)
 }
 
 func (s *Stream) processAndLogLn(a ...interface{}) {
@@ -180,21 +184,4 @@ func (s *Stream) ResetState() {
 
 func (s *Stream) ResetModes() {
 	s.StateAndModes.resetModes()
-}
-
-func splitData(data []byte, chunkSize int) [][]rune {
-	buf := bytes.Runes(data)
-	chunks := make([][]rune, 0, len(buf)/chunkSize+1)
-
-	for len(buf) >= chunkSize {
-		var chunk []rune
-		chunk, buf = buf[:chunkSize], buf[chunkSize:]
-		chunks = append(chunks, chunk)
-	}
-
-	if len(buf) > 0 {
-		chunks = append(chunks, buf)
-	}
-
-	return chunks
 }

@@ -91,7 +91,7 @@ func (s *Stream) logProcessInline(processMessage string, options *LogProcessInli
 	}
 
 	processMessage = processMessage + " " + progressDots
-	s.FormatAndLogF(style, "%s", processMessage)
+	s.FormatAndLogF(style, false, "%s", processMessage)
 
 	resultStyle := style
 	start := time.Now()
@@ -105,7 +105,7 @@ func (s *Stream) logProcessInline(processMessage string, options *LogProcessInli
 	}
 
 	elapsedSeconds := fmt.Sprintf(logProcessTimeFormat, time.Since(start).Seconds())
-	s.FormatAndLogF(resultStyle, resultFormat, elapsedSeconds)
+	s.FormatAndLogF(resultStyle, false, resultFormat, elapsedSeconds)
 
 	return err
 }
@@ -303,7 +303,7 @@ func (s *Stream) logProcessEnd(options LogProcessOptions) {
 			}
 
 			s.processAndLogF(s.prepareLogProcessMsgLeftPart(logProcess.Msg, style, timePart))
-			s.FormatAndLogF(style, "%s\n", timePart)
+			s.FormatAndLogF(style, false, "%s\n", timePart)
 
 			return nil
 		})
@@ -350,7 +350,7 @@ func (s *Stream) logProcessFail(options LogProcessOptions) {
 			}
 
 			s.processAndLogF(s.prepareLogProcessMsgLeftPart(logProcess.Msg, stylePkg.Get(stylePkg.FailName), timePart))
-			s.FormatAndLogF(stylePkg.Get(stylePkg.FailName), "%s\n", timePart)
+			s.FormatAndLogF(stylePkg.Get(stylePkg.FailName), false, "%s\n", timePart)
 
 			return nil
 		})

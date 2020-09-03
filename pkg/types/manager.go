@@ -1,11 +1,14 @@
 package types
 
 import (
+	"io"
+
 	stylePkg "github.com/werf/logboek/pkg/style"
 )
 
 type ManagerInterface interface {
 	ManagerLogInterface
+	Stream() io.Writer
 
 	SetStyle(style *stylePkg.Style)
 	Style() *stylePkg.Style
