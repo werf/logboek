@@ -24,8 +24,8 @@ type LoggerInterface interface {
 	IsAcceptedLevel(lvl level.Level) bool
 
 	Streams() StreamsInterface
-	ProxyOutStream() io.Writer
-	ProxyErrStream() io.Writer
+	OutStream() io.Writer
+	ErrStream() io.Writer
 
 	NewSubLogger(outStream, errStream io.Writer) LoggerInterface
 	GetStreamsSettingsFrom(l LoggerInterface)
