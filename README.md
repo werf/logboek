@@ -6,7 +6,7 @@ _______________________________________________________________________________
 Логер связан с каналами логирования `Error`, `Warn`, `Default`, `Info` и `Debug`. 
 При использовании каналов `Error` и `Warn` все сообщения пишутся в `ErrStream`, а в случае с остальными в `OutStream`. 
 
-<img src="https://github.com/werf/logboek/blob/readme/logger.png?raw=true">
+<img src="https://github.com/werf/logboek/blob/master/logger.png?raw=true">
 
 При создании логера необходимо указать `OutStream` и `ErrStream`, которые должны подходить под интерфейс `io.Writer` (это может быть файл, стандартные потоки вывода, буфер или произвольная имплементация):
 
@@ -16,7 +16,7 @@ import "github.com/werf/logboek"
 l := logboek.NewLogger(os.Stdout, os.Stderr)
 ```
 
-<img align="right" src="https://github.com/werf/logboek/blob/readme/logboek.png?raw=true">
+<img align="right" src="https://github.com/werf/logboek/blob/master/logboek.png?raw=true">
 
 Все сообщения, а также выполняемые блоки и процессы в канале логирования обрабатываются и оформляются с учётом настройки стримов. 
 При этом каждый канал и сообщение может иметь свой собственный стиль, который учитывается при выводе.
