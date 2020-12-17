@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gookit/color"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/werf/logboek/internal/stream/fitter"
-	stylePkg "github.com/werf/logboek/pkg/style"
 	"github.com/werf/logboek/pkg/types"
 )
 

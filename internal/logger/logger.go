@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/gookit/color"
@@ -99,7 +100,15 @@ func (l *Logger) FitText(text string, options types.FitTextOptions) string {
 	return l.outStream.FitText(text, options)
 }
 
-func (l *Logger) Colorize(style color.Style, format string, a ...interface{}) string {
+func (l *Logger) Colorize(style color.Style, a ...interface{}) string {
+	return l.ColorizeF(style, "%s", fmt.Sprint(a))
+}
+
+func (l *Logger) ColorizeLn(style color.Style, a ...interface{}) string {
+	return l.ColorizeF(style, "%s", fmt.Sprintln(a))
+}
+
+func (l *Logger) ColorizeF(style color.Style, format string, a ...interface{}) string {
 	if !l.commonStreamStateAndModes.IsStyleEnabled() {
 		return stylePkg.None().Sprintf(format, a...)
 	} else {
