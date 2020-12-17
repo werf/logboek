@@ -1,6 +1,7 @@
 package fitter
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -64,7 +65,7 @@ func TestSequence_TWidth(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(string(test.kind), func(t *testing.T) {
+		t.Run(fmt.Sprint(test.kind), func(t *testing.T) {
 			s := newSequence(test.data)
 			s.SetKind(test.kind)
 
