@@ -53,16 +53,20 @@ func Debug() types.ManagerInterface {
 	return defaultLogger.Debug()
 }
 
-func LogBlock(format string, a ...interface{}) types.LogBlockInterface {
-	return Default().LogBlock(format, a...)
+func LogBlock(headerOrFormat string, a ...interface{}) types.LogBlockInterface {
+	return Default().LogBlock(headerOrFormat, a...)
 }
 
-func LogProcessInline(format string, a ...interface{}) types.LogProcessInlineInterface {
-	return Default().LogProcessInline(format, a...)
+func LogProcessInline(headerOrFormat string, a ...interface{}) types.LogProcessInlineInterface {
+	return Default().LogProcessInline(headerOrFormat, a...)
 }
 
-func LogProcess(format string, a ...interface{}) types.LogProcessInterface {
-	return Default().LogProcess(format, a...)
+func LogProcess(headerOrFormat string, a ...interface{}) types.LogProcessInterface {
+	return Default().LogProcess(headerOrFormat, a...)
+}
+
+func Log(a ...interface{}) {
+	Default().Log(a...)
 }
 
 func LogLn(a ...interface{}) {
@@ -73,6 +77,10 @@ func LogF(format string, a ...interface{}) {
 	Default().LogF(format, a...)
 }
 
+func LogDetails(a ...interface{}) {
+	Default().LogDetails(a...)
+}
+
 func LogLnDetails(a ...interface{}) {
 	Default().LogLnDetails(a...)
 }
@@ -81,12 +89,20 @@ func LogFDetails(format string, a ...interface{}) {
 	Default().LogFDetails(format, a...)
 }
 
+func LogHighlight(a ...interface{}) {
+	Default().LogHighlight(a...)
+}
+
 func LogLnHighlight(a ...interface{}) {
 	Default().LogLnHighlight(a...)
 }
 
 func LogFHighlight(format string, a ...interface{}) {
 	Default().LogFHighlight(format, a...)
+}
+
+func LogWithCustomStyle(style color.Style, a ...interface{}) {
+	Default().LogWithCustomStyle(style, a...)
 }
 
 func LogLnWithCustomStyle(style color.Style, a ...interface{}) {
@@ -121,8 +137,16 @@ func FitText(text string, options types.FitTextOptions) string {
 	return defaultLogger.FitText(text, options)
 }
 
-func Colorize(style color.Style, format string, a ...interface{}) string {
-	return defaultLogger.Colorize(style, format, a...)
+func Colorize(style color.Style, a ...interface{}) string {
+	return defaultLogger.Colorize(style, a...)
+}
+
+func ColorizeLn(style color.Style, a ...interface{}) string {
+	return defaultLogger.ColorizeLn(style, a...)
+}
+
+func ColorizeF(style color.Style, format string, a ...interface{}) string {
+	return defaultLogger.ColorizeF(style, format, a...)
 }
 
 func OutStream() io.Writer {

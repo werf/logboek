@@ -37,12 +37,20 @@ func (m *Manager) IsAccepted() bool {
 	return m.level <= m.logger.acceptedLevel
 }
 
+func (m *Manager) Log(a ...interface{}) {
+	m.logCustom(m.style, a...)
+}
+
 func (m *Manager) LogLn(a ...interface{}) {
 	m.logLnCustom(m.style, a...)
 }
 
 func (m *Manager) LogF(format string, a ...interface{}) {
 	m.logFCustom(m.style, format, a...)
+}
+
+func (m *Manager) LogDetails(a ...interface{}) {
+	m.LogWithCustomStyle(stylePkg.Details(), a...)
 }
 
 func (m *Manager) LogLnDetails(a ...interface{}) {
@@ -53,12 +61,20 @@ func (m *Manager) LogFDetails(format string, a ...interface{}) {
 	m.LogFWithCustomStyle(stylePkg.Details(), format, a...)
 }
 
+func (m *Manager) LogHighlight(a ...interface{}) {
+	m.LogWithCustomStyle(stylePkg.Highlight(), a...)
+}
+
 func (m *Manager) LogLnHighlight(a ...interface{}) {
 	m.LogLnWithCustomStyle(stylePkg.Highlight(), a...)
 }
 
 func (m *Manager) LogFHighlight(format string, a ...interface{}) {
 	m.LogFWithCustomStyle(stylePkg.Highlight(), format, a...)
+}
+
+func (m *Manager) LogWithCustomStyle(style color.Style, a ...interface{}) {
+	m.logCustom(style, a...)
 }
 
 func (m *Manager) LogLnWithCustomStyle(style color.Style, a ...interface{}) {
@@ -77,28 +93,46 @@ func (m *Manager) LogOptionalLn() {
 	m.getStream().EnableOptionalLn()
 }
 
-func (m *Manager) LogBlock(format string, a ...interface{}) types.LogBlockInterface {
-	logBlock := m.getStream().NewLogBlock(m, format, a...)
+func (m *Manager) LogBlock(headerOrFormat string, a ...interface{}) types.LogBlockInterface {
+	format, args := processHeaderOrFormatArg(headerOrFormat, a...)
+
+	logBlock := m.getStream().NewLogBlock(m, format, args...)
 	logBlock.Options(func(options types.LogBlockOptionsInterface) {
 		options.Style(m.style)
 	})
 	return logBlock
 }
 
-func (m *Manager) LogProcessInline(format string, a ...interface{}) types.LogProcessInlineInterface {
-	logProcessInline := m.getStream().NewLogProcessInline(m, format, a...)
+func (m *Manager) LogProcessInline(headerOrFormat string, a ...interface{}) types.LogProcessInlineInterface {
+	format, args := processHeaderOrFormatArg(headerOrFormat, a...)
+
+	logProcessInline := m.getStream().NewLogProcessInline(m, format, args...)
 	logProcessInline.Options(func(options types.LogProcessInlineOptionsInterface) {
 		options.Style(m.style)
 	})
 	return logProcessInline
 }
 
-func (m *Manager) LogProcess(format string, a ...interface{}) types.LogProcessInterface {
-	logProcess := m.getStream().NewLogProcess(m, format, a...)
+func (m *Manager) LogProcess(headerOrFormat string, a ...interface{}) types.LogProcessInterface {
+	format, args := processHeaderOrFormatArg(headerOrFormat, a...)
+
+	logProcess := m.getStream().NewLogProcess(m, format, args...)
 	logProcess.Options(func(options types.LogProcessOptionsInterface) {
 		options.Style(m.style)
 	})
 	return logProcess
+}
+
+func processHeaderOrFormatArg(headerOrFormat string, a ...interface{}) (string, []interface{}) {
+	if len(a) == 0 {
+		return "%s", []interface{}{headerOrFormat}
+	} else {
+		return headerOrFormat, a
+	}
+}
+
+func (m *Manager) logCustom(style color.Style, a ...interface{}) {
+	m.logFCustom(style, "%s", fmt.Sprint(a...))
 }
 
 func (m *Manager) logLnCustom(style color.Style, a ...interface{}) {
