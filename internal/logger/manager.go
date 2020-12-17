@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/gookit/color"
+
 	"github.com/werf/logboek/internal/stream"
 	"github.com/werf/logboek/pkg/level"
 	stylePkg "github.com/werf/logboek/pkg/style"
@@ -13,7 +15,7 @@ import (
 type Manager struct {
 	level  level.Level
 	logger *Logger
-	style  *stylePkg.Style
+	style  color.Style
 }
 
 func NewManager(logger *Logger, lvl level.Level) *Manager {
@@ -23,11 +25,11 @@ func NewManager(logger *Logger, lvl level.Level) *Manager {
 	}
 }
 
-func (m *Manager) SetStyle(style *stylePkg.Style) {
+func (m *Manager) SetStyle(style color.Style) {
 	m.style = style
 }
 
-func (m *Manager) Style() *stylePkg.Style {
+func (m *Manager) Style() color.Style {
 	return m.style
 }
 
@@ -59,11 +61,11 @@ func (m *Manager) LogFHighlight(format string, a ...interface{}) {
 	m.LogFWithCustomStyle(stylePkg.Highlight(), format, a...)
 }
 
-func (m *Manager) LogLnWithCustomStyle(style *stylePkg.Style, a ...interface{}) {
+func (m *Manager) LogLnWithCustomStyle(style color.Style, a ...interface{}) {
 	m.logLnCustom(style, a...)
 }
 
-func (m *Manager) LogFWithCustomStyle(style *stylePkg.Style, format string, a ...interface{}) {
+func (m *Manager) LogFWithCustomStyle(style color.Style, format string, a ...interface{}) {
 	m.logFCustom(style, format, a...)
 }
 
@@ -99,15 +101,15 @@ func (m *Manager) LogProcess(format string, a ...interface{}) types.LogProcessIn
 	return logProcess
 }
 
-func (m *Manager) logLnCustom(style *stylePkg.Style, a ...interface{}) {
+func (m *Manager) logLnCustom(style color.Style, a ...interface{}) {
 	m.logFCustom(style, "%s", fmt.Sprintln(a...))
 }
 
-func (m *Manager) logFCustom(style *stylePkg.Style, format string, a ...interface{}) {
+func (m *Manager) logFCustom(style color.Style, format string, a ...interface{}) {
 	m.formatAndLogF(style, false, format, a...)
 }
 
-func (m *Manager) formatAndLogF(style *stylePkg.Style, cacheIncompleteLine bool, format string, a ...interface{}) {
+func (m *Manager) formatAndLogF(style color.Style, cacheIncompleteLine bool, format string, a ...interface{}) {
 	if !m.IsAccepted() {
 		return
 	}

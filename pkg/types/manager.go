@@ -3,15 +3,15 @@ package types
 import (
 	"io"
 
-	stylePkg "github.com/werf/logboek/pkg/style"
+	"github.com/gookit/color"
 )
 
 type ManagerInterface interface {
 	ManagerLogInterface
 	Stream() io.Writer
 
-	SetStyle(style *stylePkg.Style)
-	Style() *stylePkg.Style
+	SetStyle(style color.Style)
+	Style() color.Style
 
 	IsAccepted() bool
 }
@@ -23,8 +23,8 @@ type ManagerLogInterface interface {
 	LogFDetails(format string, a ...interface{})
 	LogLnHighlight(a ...interface{})
 	LogFHighlight(format string, a ...interface{})
-	LogLnWithCustomStyle(style *stylePkg.Style, a ...interface{})
-	LogFWithCustomStyle(style *stylePkg.Style, format string, a ...interface{})
+	LogLnWithCustomStyle(style color.Style, a ...interface{})
+	LogFWithCustomStyle(style color.Style, format string, a ...interface{})
 	LogOptionalLn()
 
 	LogBlock(format string, a ...interface{}) LogBlockInterface

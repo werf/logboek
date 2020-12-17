@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
+	"github.com/gookit/color"
 
 	"github.com/werf/logboek/internal/stream/fitter"
 	stylePkg "github.com/werf/logboek/pkg/style"
@@ -97,7 +97,7 @@ type modes struct {
 
 func newModes() modes {
 	return modes{
-		isStyleEnabled:                     !color.NoColor,
+		isStyleEnabled:                     true,
 		isLineWrappingEnabled:              true,
 		isProxyStreamDataFormattingEnabled: true,
 		isGitlabCollapsibleSectionsEnabled: os.Getenv("GITLAB_CI") == "true",
@@ -367,13 +367,13 @@ func (s *StateAndModes) ProcessesBorderIndentWidth() int {
 	return 0
 }
 
-func (s *StateAndModes) decorateByWithExtraProcessBorder(colorlessBorder string, style *stylePkg.Style, decoratedFunc func() error) func() error {
+func (s *StateAndModes) decorateByWithExtraProcessBorder(colorlessBorder string, style color.Style, decoratedFunc func() error) func() error {
 	return func() error {
 		return s.withExtraProcessBorder(colorlessBorder, style, decoratedFunc)
 	}
 }
 
-func (s *StateAndModes) withExtraProcessBorder(colorlessValue string, style *stylePkg.Style, decoratedFunc func() error) error {
+func (s *StateAndModes) withExtraProcessBorder(colorlessValue string, style color.Style, decoratedFunc func() error) error {
 	s.appendProcessBorder(colorlessValue, style)
 	err := decoratedFunc()
 	s.popProcessBorder()
@@ -402,7 +402,7 @@ func (s *StateAndModes) withoutLastProcessBorder(f func() error) error {
 	return err
 }
 
-func (s *StateAndModes) appendProcessBorder(colorlessValue string, style *stylePkg.Style) {
+func (s *StateAndModes) appendProcessBorder(colorlessValue string, style color.Style) {
 	s.processesBorderValues = append(s.processesBorderValues, colorlessValue)
 	s.processesBorderFormattedValues = append(s.processesBorderFormattedValues, s.formatWithStyle(style, colorlessValue))
 }
@@ -434,20 +434,20 @@ func (s *StateAndModes) processBordersBlockWidth() int {
 
 type tagState struct {
 	tagValue     string
-	tagStyle     *stylePkg.Style
+	tagStyle     color.Style
 	tagPartWidth int
 }
 
 const tagIndentWidth = 2
 
-func (s *StateAndModes) DoWithTag(value string, style *stylePkg.Style, f func()) {
+func (s *StateAndModes) DoWithTag(value string, style color.Style, f func()) {
 	_ = s.DoErrorWithTag(value, style, func() error {
 		f()
 		return nil
 	})
 }
 
-func (s *StateAndModes) DoErrorWithTag(value string, style *stylePkg.Style, f func() error) error {
+func (s *StateAndModes) DoErrorWithTag(value string, style color.Style, f func() error) error {
 	savedTag := s.tagValue
 	savedStyle := s.tagStyle
 	s.SetTagWithStyle(value, style)
@@ -461,11 +461,11 @@ func (s *StateAndModes) SetTag(value string) {
 	s.tagValue = value
 }
 
-func (s *StateAndModes) SetTagStyle(style *stylePkg.Style) {
+func (s *StateAndModes) SetTagStyle(style color.Style) {
 	s.tagStyle = style
 }
 
-func (s *StateAndModes) SetTagWithStyle(value string, style *stylePkg.Style) {
+func (s *StateAndModes) SetTagWithStyle(value string, style color.Style) {
 	s.SetTagStyle(style)
 	s.SetTag(value)
 }
@@ -495,7 +495,7 @@ func (s *StateAndModes) formattedTag() string {
 
 type prefixState struct {
 	prefix      string
-	prefixStyle *stylePkg.Style
+	prefixStyle color.Style
 	prefixTime  time.Time
 }
 
@@ -526,7 +526,7 @@ func (s *StateAndModes) SetPrefix(value string) {
 	s.prefix = value
 }
 
-func (s *StateAndModes) SetPrefixStyle(style *stylePkg.Style) {
+func (s *StateAndModes) SetPrefixStyle(style color.Style) {
 	s.prefixStyle = style
 }
 
@@ -579,12 +579,13 @@ func (s *StateAndModes) processOptionalLn() string {
 	return result
 }
 
-func (s *StateAndModes) formatWithStyle(style *stylePkg.Style, format string, a ...interface{}) string {
+func (s *StateAndModes) formatWithStyle(style color.Style, format string, a ...interface{}) string {
+	formatStyle := style
 	if !s.isStyleEnabled || style == nil {
-		return stylePkg.SimpleFormat(format, a...)
-	} else {
-		return style.Colorize(format, a...)
+		formatStyle = stylePkg.None()
 	}
+
+	return formatStyle.Sprintf(format, a...)
 }
 
 func (s *StateAndModes) clone() *StateAndModes {

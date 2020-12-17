@@ -1,6 +1,8 @@
 package stream
 
 import (
+	"github.com/gookit/color"
+
 	stylePkg "github.com/werf/logboek/pkg/style"
 	"github.com/werf/logboek/pkg/types"
 )
@@ -56,7 +58,7 @@ type LogBlockOptions struct {
 	mute                      bool
 	withIndent                bool
 	withoutLogOptionalLn      bool
-	style                     *stylePkg.Style
+	style                     color.Style
 }
 
 func (opts *LogBlockOptions) DisableIfLevelNotAccepted() {
@@ -75,7 +77,7 @@ func (opts *LogBlockOptions) WithoutLogOptionalLn() {
 	opts.withoutLogOptionalLn = true
 }
 
-func (opts *LogBlockOptions) Style(s *stylePkg.Style) {
+func (opts *LogBlockOptions) Style(s color.Style) {
 	opts.style = s
 }
 
@@ -128,7 +130,7 @@ func (l *LogProcessInline) DoError(f func() error) error {
 type LogProcessInlineOptions struct {
 	disableIfLevelNotAccepted bool
 	mute                      bool
-	style                     *stylePkg.Style
+	style                     color.Style
 }
 
 func (opts *LogProcessInlineOptions) DisableIfLevelNotAccepted() {
@@ -139,7 +141,7 @@ func (opts *LogProcessInlineOptions) Mute() {
 	opts.mute = true
 }
 
-func (opts *LogProcessInlineOptions) Style(s *stylePkg.Style) {
+func (opts *LogProcessInlineOptions) Style(s color.Style) {
 	opts.style = s
 }
 
@@ -226,7 +228,7 @@ func (l *LogProcess) StepEnd(format string, a ...interface{}) {
 		return
 	}
 
-	l.stream.logProcessStepEnd(stylePkg.SimpleFormat(format, a...), *l.options)
+	l.stream.logProcessStepEnd(stylePkg.None().Sprintf(format, a...), *l.options)
 }
 
 func (l *LogProcess) End() {
@@ -269,7 +271,7 @@ type LogProcessOptions struct {
 	withoutElapsedTime        bool
 	infoSectionFunc           func(error)
 	successInfoSectionFunc    func()
-	style                     *stylePkg.Style
+	style                     color.Style
 }
 
 func (opts *LogProcessOptions) DisableIfLevelNotAccepted() {
@@ -300,6 +302,6 @@ func (opts *LogProcessOptions) SuccessInfoSectionFunc(f func()) {
 	opts.successInfoSectionFunc = f
 }
 
-func (opts *LogProcessOptions) Style(style *stylePkg.Style) {
+func (opts *LogProcessOptions) Style(style color.Style) {
 	opts.style = style
 }

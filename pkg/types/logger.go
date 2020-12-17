@@ -3,8 +3,9 @@ package types
 import (
 	"io"
 
+	"github.com/gookit/color"
+
 	"github.com/werf/logboek/pkg/level"
-	"github.com/werf/logboek/pkg/style"
 )
 
 type LoggerInterface interface {
@@ -17,7 +18,7 @@ type LoggerInterface interface {
 	Debug() ManagerInterface
 
 	FitText(text string, options FitTextOptions) string
-	Colorize(style *style.Style, format string, a ...interface{}) string
+	Colorize(style color.Style, format string, a ...interface{}) string
 
 	AcceptedLevel() level.Level
 	SetAcceptedLevel(lvl level.Level)
