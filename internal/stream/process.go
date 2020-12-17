@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/avelino/slugify"
+	"github.com/gookit/color"
 
 	stylePkg "github.com/werf/logboek/pkg/style"
 	"github.com/werf/logboek/pkg/types"
@@ -18,15 +19,15 @@ const (
 )
 
 func (s *Stream) NewLogBlock(manager types.ManagerInterface, format string, a ...interface{}) *LogBlock {
-	return &LogBlock{manager: manager, stream: s, title: stylePkg.SimpleFormat(format, a...), options: &LogBlockOptions{}}
+	return &LogBlock{manager: manager, stream: s, title: stylePkg.None().Sprintf(format, a...), options: &LogBlockOptions{}}
 }
 
 func (s *Stream) NewLogProcessInline(manager types.ManagerInterface, format string, a ...interface{}) *LogProcessInline {
-	return &LogProcessInline{manager: manager, stream: s, title: stylePkg.SimpleFormat(format, a...), options: &LogProcessInlineOptions{}}
+	return &LogProcessInline{manager: manager, stream: s, title: stylePkg.None().Sprintf(format, a...), options: &LogProcessInlineOptions{}}
 }
 
 func (s *Stream) NewLogProcess(manager types.ManagerInterface, format string, a ...interface{}) *LogProcess {
-	return &LogProcess{manager: manager, stream: s, title: stylePkg.SimpleFormat(format, a...), options: &LogProcessOptions{}}
+	return &LogProcess{manager: manager, stream: s, title: stylePkg.None().Sprintf(format, a...), options: &LogProcessOptions{}}
 }
 
 func (s *Stream) logBlock(blockMessage string, options *LogBlockOptions, blockFunc func() error) error {
@@ -100,7 +101,7 @@ func (s *Stream) logProcessInline(processMessage string, options *LogProcessInli
 
 	err := s.DoErrorWithIndent(processFunc)
 	if err != nil {
-		resultStyle = stylePkg.Get(stylePkg.FailName)
+		resultStyle = color.GetStyle(stylePkg.ProcessFailName)
 		resultFormat = " (%s) FAILED\n"
 	}
 
@@ -110,7 +111,7 @@ func (s *Stream) logProcessInline(processMessage string, options *LogProcessInli
 	return err
 }
 
-func (s *Stream) prepareLogProcessMsgLeftPart(leftPart string, style *stylePkg.Style, rightParts ...string) string {
+func (s *Stream) prepareLogProcessMsgLeftPart(leftPart string, style color.Style, rightParts ...string) string {
 	var result string
 
 	spaceWidth := s.ContentWidth() - len(strings.Join(rightParts, logStateRightPartsSeparator))
@@ -247,7 +248,7 @@ func (s *Stream) logProcessStepEnd(processMessage string, options LogProcessOpti
 	_ = processMessageFunc()
 }
 
-func (s *Stream) applyInfoLogProcessStep(userError error, infoSectionFunc func(err error), withIndent bool, style *stylePkg.Style) {
+func (s *Stream) applyInfoLogProcessStep(userError error, infoSectionFunc func(err error), withIndent bool, style color.Style) {
 	infoHeaderFunc := func() error {
 		return s.DoErrorWithoutIndent(func() error {
 			s.processAndLogLn(s.prepareLogProcessMsgLeftPart("Info", style))
@@ -349,8 +350,8 @@ func (s *Stream) logProcessFail(options LogProcessOptions) {
 				timePart = fmt.Sprintf(" (%s) FAILED", elapsedSeconds)
 			}
 
-			s.processAndLogF(s.prepareLogProcessMsgLeftPart(logProcess.Msg, stylePkg.Get(stylePkg.FailName), timePart))
-			s.FormatAndLogF(stylePkg.Get(stylePkg.FailName), false, "%s\n", timePart)
+			s.processAndLogF(s.prepareLogProcessMsgLeftPart(logProcess.Msg, color.GetStyle(stylePkg.ProcessFailName), timePart))
+			s.FormatAndLogF(color.GetStyle(stylePkg.ProcessFailName), false, "%s\n", timePart)
 
 			return nil
 		})

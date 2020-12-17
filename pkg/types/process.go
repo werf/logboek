@@ -1,6 +1,8 @@
 package types
 
-import stylePkg "github.com/werf/logboek/pkg/style"
+import (
+	"github.com/gookit/color"
+)
 
 type LogBlockInterface interface {
 	Options(func(options LogBlockOptionsInterface)) LogBlockInterface
@@ -15,7 +17,7 @@ type LogBlockOptionsInterface interface {
 	Mute()
 	WithIndent()
 	WithoutLogOptionalLn()
-	Style(*stylePkg.Style)
+	Style(color.Style)
 }
 
 type LogProcessInlineInterface interface {
@@ -29,7 +31,7 @@ type LogProcessInlineInterface interface {
 type LogProcessInlineOptionsInterface interface {
 	DisableIfLevelNotAccepted()
 	Mute()
-	Style(*stylePkg.Style)
+	Style(color.Style)
 }
 
 type LogProcessInterface interface {
@@ -52,5 +54,5 @@ type LogProcessOptionsInterface interface {
 	WithoutElapsedTime()
 	InfoSectionFunc(func(err error))
 	SuccessInfoSectionFunc(func())
-	Style(*stylePkg.Style)
+	Style(color.Style)
 }

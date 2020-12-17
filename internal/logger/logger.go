@@ -3,6 +3,8 @@ package logger
 import (
 	"io"
 
+	"github.com/gookit/color"
+
 	"github.com/werf/logboek/internal/stream"
 	"github.com/werf/logboek/pkg/level"
 	stylePkg "github.com/werf/logboek/pkg/style"
@@ -97,11 +99,11 @@ func (l *Logger) FitText(text string, options types.FitTextOptions) string {
 	return l.outStream.FitText(text, options)
 }
 
-func (l *Logger) Colorize(style *stylePkg.Style, format string, a ...interface{}) string {
+func (l *Logger) Colorize(style color.Style, format string, a ...interface{}) string {
 	if !l.commonStreamStateAndModes.IsStyleEnabled() {
-		return stylePkg.SimpleFormat(format, a...)
+		return stylePkg.None().Sprintf(format, a...)
 	} else {
-		return style.Colorize(format, a...)
+		return style.Sprintf(format, a...)
 	}
 }
 

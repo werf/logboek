@@ -6,11 +6,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/fatih/color"
+	"github.com/gookit/color"
 
 	"github.com/werf/logboek/internal/logger"
 	"github.com/werf/logboek/pkg/level"
-	"github.com/werf/logboek/pkg/style"
 	"github.com/werf/logboek/pkg/types"
 )
 
@@ -21,7 +20,7 @@ const ctxLoggerKey = "logboek_logger"
 func init() {
 	defaultLogger = NewLogger(os.Stdout, os.Stderr)
 
-	defaultErrorAndWarnStyle := &style.Style{Attributes: []color.Attribute{color.FgRed, color.Bold}}
+	defaultErrorAndWarnStyle := color.Style{color.FgRed, color.Bold}
 	defaultLogger.Error().SetStyle(defaultErrorAndWarnStyle)
 	defaultLogger.Warn().SetStyle(defaultErrorAndWarnStyle)
 }
@@ -90,11 +89,11 @@ func LogFHighlight(format string, a ...interface{}) {
 	Default().LogFHighlight(format, a...)
 }
 
-func LogLnWithCustomStyle(style *style.Style, a ...interface{}) {
+func LogLnWithCustomStyle(style color.Style, a ...interface{}) {
 	Default().LogLnWithCustomStyle(style, a...)
 }
 
-func LogFWithCustomStyle(style *style.Style, format string, a ...interface{}) {
+func LogFWithCustomStyle(style color.Style, format string, a ...interface{}) {
 	Default().LogFWithCustomStyle(style, format, a...)
 }
 
@@ -122,7 +121,7 @@ func FitText(text string, options types.FitTextOptions) string {
 	return defaultLogger.FitText(text, options)
 }
 
-func Colorize(style *style.Style, format string, a ...interface{}) string {
+func Colorize(style color.Style, format string, a ...interface{}) string {
 	return defaultLogger.Colorize(style, format, a...)
 }
 

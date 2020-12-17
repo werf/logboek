@@ -1,6 +1,8 @@
 package types
 
-import "github.com/werf/logboek/pkg/style"
+import (
+	"github.com/gookit/color"
+)
 
 type StreamsInterface interface {
 	Mute()
@@ -42,11 +44,11 @@ type StreamsInterface interface {
 	DecreaseIndent()
 	ResetIndent()
 
-	DoWithTag(value string, style *style.Style, f func())
-	DoErrorWithTag(value string, style *style.Style, f func() error) error
+	DoWithTag(value string, style color.Style, f func())
+	DoErrorWithTag(value string, style color.Style, f func() error) error
 	SetTag(value string)
-	SetTagStyle(style *style.Style)
-	SetTagWithStyle(value string, style *style.Style)
+	SetTagStyle(style color.Style)
+	SetTagWithStyle(value string, style color.Style)
 	ResetTag()
 
 	EnablePrefixWithTime()
@@ -54,7 +56,7 @@ type StreamsInterface interface {
 	IsPrefixWithTimeEnabled() bool
 	ResetPrefixTime()
 	SetPrefix(value string)
-	SetPrefixStyle(style *style.Style)
+	SetPrefixStyle(style color.Style)
 	ResetPrefix()
 
 	EnableLogProcessBorder()
