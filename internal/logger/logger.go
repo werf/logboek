@@ -101,11 +101,11 @@ func (l *Logger) FitText(text string, options types.FitTextOptions) string {
 }
 
 func (l *Logger) Colorize(style color.Style, a ...interface{}) string {
-	return l.ColorizeF(style, "%s", fmt.Sprint(a))
+	return l.ColorizeF(style, "%s", fmt.Sprint(a...))
 }
 
 func (l *Logger) ColorizeLn(style color.Style, a ...interface{}) string {
-	return l.ColorizeF(style, "%s", fmt.Sprintln(a))
+	return l.ColorizeF(style, "%s", fmt.Sprintln(a...))
 }
 
 func (l *Logger) ColorizeF(style color.Style, format string, a ...interface{}) string {
