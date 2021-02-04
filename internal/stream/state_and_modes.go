@@ -8,6 +8,7 @@ import (
 	"github.com/gookit/color"
 
 	"github.com/werf/logboek/internal/stream/fitter"
+	"github.com/werf/logboek/internal/util"
 	stylePkg "github.com/werf/logboek/pkg/style"
 )
 
@@ -580,12 +581,11 @@ func (s *StateAndModes) processOptionalLn() string {
 }
 
 func (s *StateAndModes) formatWithStyle(style color.Style, format string, a ...interface{}) string {
-	formatStyle := style
 	if !s.isStyleEnabled || style == nil {
-		formatStyle = stylePkg.None()
+		return util.ColorizeF(stylePkg.None(), format, a...)
+	} else {
+		return util.ColorizeF(style, format, a...)
 	}
-
-	return formatStyle.Sprintf(format, a...)
 }
 
 func (s *StateAndModes) clone() *StateAndModes {

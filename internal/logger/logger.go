@@ -7,6 +7,7 @@ import (
 	"github.com/gookit/color"
 
 	"github.com/werf/logboek/internal/stream"
+	"github.com/werf/logboek/internal/util"
 	"github.com/werf/logboek/pkg/level"
 	stylePkg "github.com/werf/logboek/pkg/style"
 	"github.com/werf/logboek/pkg/types"
@@ -110,9 +111,9 @@ func (l *Logger) ColorizeLn(style color.Style, a ...interface{}) string {
 
 func (l *Logger) ColorizeF(style color.Style, format string, a ...interface{}) string {
 	if !l.commonStreamStateAndModes.IsStyleEnabled() {
-		return stylePkg.None().Sprintf(format, a...)
+		return util.ColorizeF(stylePkg.None(), format, a...)
 	} else {
-		return style.Sprintf(format, a...)
+		return util.ColorizeF(style, format, a...)
 	}
 }
 
