@@ -1,6 +1,7 @@
 package stream
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"github.com/gookit/color"
 
 	"github.com/werf/logboek/internal/stream/fitter"
-	"github.com/werf/logboek/internal/util"
 	stylePkg "github.com/werf/logboek/pkg/style"
 )
 
@@ -405,7 +405,7 @@ func (s *StateAndModes) withoutLastProcessBorder(f func() error) error {
 
 func (s *StateAndModes) appendProcessBorder(colorlessValue string, style color.Style) {
 	s.processesBorderValues = append(s.processesBorderValues, colorlessValue)
-	s.processesBorderFormattedValues = append(s.processesBorderFormattedValues, s.formatWithStyle(style, colorlessValue))
+	s.processesBorderFormattedValues = append(s.processesBorderFormattedValues, s.FormatWithStyle(style, colorlessValue))
 }
 
 func (s *StateAndModes) popProcessBorder() {
@@ -489,7 +489,7 @@ func (s *StateAndModes) formattedTag() string {
 	}
 
 	return strings.Join([]string{
-		s.formatWithStyle(s.tagStyle, s.tagValue),
+		s.FormatWithStyle(s.tagStyle, s.tagValue),
 		strings.Repeat(" ", tagIndentWidth),
 	}, "")
 }
@@ -542,7 +542,7 @@ func (s *StateAndModes) formattedPrefix() string {
 		return ""
 	}
 
-	return s.formatWithStyle(s.prefixStyle, s.preparePrefixValue())
+	return s.FormatWithStyle(s.prefixStyle, s.preparePrefixValue())
 }
 
 func (s *StateAndModes) preparePrefixValue() string {
@@ -580,12 +580,21 @@ func (s *StateAndModes) processOptionalLn() string {
 	return result
 }
 
-func (s *StateAndModes) formatWithStyle(style color.Style, format string, a ...interface{}) string {
+func (s *StateAndModes) FormatWithStyle(style color.Style, format string, a ...interface{}) string {
 	if !s.isStyleEnabled || style == nil {
-		return util.ColorizeF(stylePkg.None(), format, a...)
-	} else {
-		return util.ColorizeF(style, format, a...)
+		style = stylePkg.None()
 	}
+
+	var resultLines []string
+	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
+		if line == "" {
+			resultLines = append(resultLines, line)
+		} else {
+			resultLines = append(resultLines, style.Sprint(line))
+		}
+	}
+
+	return strings.Join(resultLines, "\n")
 }
 
 func (s *StateAndModes) clone() *StateAndModes {
