@@ -164,6 +164,11 @@ type proxyStream struct {
 }
 
 func (s proxyStream) Write(data []byte) (int, error) {
-	s.Manager.formatAndLogF(s.Manager.style, true, "%s", string(data))
+	if s.logger.Streams().IsProxyStreamDataFormattingEnabled() {
+		s.Manager.formatAndLogF(s.Manager.style, true, "%s", string(data))
+	} else {
+		return s.logger.GetLevelStream(s.level).Write(data)
+	}
+
 	return len(data), nil
 }
