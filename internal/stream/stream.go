@@ -168,6 +168,10 @@ func (s *Stream) logFBase(format string, a ...interface{}) (int, error) {
 	return fmt.Fprintf(s.Writer, format, a...)
 }
 
+func (s *Stream) Write(data []byte) (int, error) {
+	return s.Writer.Write(data)
+}
+
 func (s *Stream) applyOptionalLn() {
 	_, _ = s.logFBase(s.processOptionalLn())
 }

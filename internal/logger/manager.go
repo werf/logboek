@@ -140,15 +140,11 @@ func (m *Manager) logLnCustom(style color.Style, a ...interface{}) {
 }
 
 func (m *Manager) logFCustom(style color.Style, format string, a ...interface{}) {
-	m.formatAndLogF(style, false, format, a...)
-}
-
-func (m *Manager) formatAndLogF(style color.Style, cacheIncompleteLine bool, format string, a ...interface{}) {
 	if !m.IsAccepted() {
 		return
 	}
 
-	m.getStream().FormatAndLogF(style, cacheIncompleteLine, format, a...)
+	m.getStream().FormatAndLogF(style, false, format, a...)
 }
 
 func (m *Manager) getStream() *stream.Stream {
@@ -164,6 +160,14 @@ type proxyStream struct {
 }
 
 func (s proxyStream) Write(data []byte) (int, error) {
-	s.Manager.formatAndLogF(s.Manager.style, true, "%s", string(data))
+	if !s.Manager.IsAccepted() {
+		return len(data), nil
+	}
+
+	if !s.logger.Streams().IsProxyStreamDataFormattingEnabled() {
+		return s.Manager.getStream().Write(data)
+	}
+
+	s.getStream().FormatAndLogF(s.Manager.style, true, "%s", string(data))
 	return len(data), nil
 }
