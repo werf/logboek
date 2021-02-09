@@ -37,7 +37,7 @@ func (s *Stream) logBlock(blockMessage string, options *LogBlockOptions, blockFu
 	}
 
 	titleFunc := func() error {
-		s.processAndLogLn(s.formatWithStyle(style, blockMessage))
+		s.processAndLogLn(s.FormatWithStyle(style, blockMessage))
 		return nil
 	}
 
@@ -130,7 +130,7 @@ func (s *Stream) prepareLogProcessMsgLeftPart(leftPart string, style color.Style
 		return ""
 	}
 
-	return s.formatWithStyle(style, result)
+	return s.FormatWithStyle(style, result)
 }
 
 func (s *Stream) logProcess(processMessage string, options *LogProcessOptions, processFunc func() error) error {

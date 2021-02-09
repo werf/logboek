@@ -84,7 +84,7 @@ func fitTextWithIndent(text string, lineWidth, extraIndentWidth int, markWrapped
 const chunkSize = 256
 
 func (s *Stream) FormatAndLogF(style color.Style, cacheIncompleteLine bool, format string, a ...interface{}) {
-	msg := s.formatWithStyle(style, format, a...)
+	msg := s.FormatWithStyle(style, format, a...)
 
 	if s.IsLineWrappingEnabled() {
 		for len(msg) >= chunkSize {
