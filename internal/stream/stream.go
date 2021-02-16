@@ -87,13 +87,14 @@ func (s *Stream) FormatAndLogF(style color.Style, cacheIncompleteLine bool, form
 	msg := s.FormatWithStyle(style, format, a...)
 
 	if s.IsLineWrappingEnabled() {
-		for len(msg) >= chunkSize {
-			var chunk string
-			chunk, msg = msg[:chunkSize], msg[chunkSize:]
-			s.processAndLogF(fitter.FitText(chunk, &s.StateAndModes.State, s.ContentWidth(), true, true))
+		var msgRunes = []rune(msg)
+		for len(msgRunes) >= chunkSize {
+			var chunk []rune
+			chunk, msgRunes = msgRunes[:chunkSize], msgRunes[chunkSize:]
+			s.processAndLogF(fitter.FitText(string(chunk), &s.StateAndModes.State, s.ContentWidth(), true, true))
 		}
 
-		s.processAndLogF(fitter.FitText(msg, &s.StateAndModes.State, s.ContentWidth(), true, cacheIncompleteLine))
+		s.processAndLogF(fitter.FitText(string(msgRunes), &s.StateAndModes.State, s.ContentWidth(), true, cacheIncompleteLine))
 	} else {
 		s.processAndLogF(msg)
 	}
