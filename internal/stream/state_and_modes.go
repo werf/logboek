@@ -198,6 +198,7 @@ func (s *StateAndModes) IsLineWrappingEnabled() bool {
 }
 
 func (s *StateAndModes) EnableStyle() {
+	color.ForceColor()
 	s.isStyleEnabled = true
 }
 
