@@ -84,6 +84,10 @@ func fitTextWithIndent(text string, lineWidth, extraIndentWidth int, markWrapped
 const chunkSize = 256
 
 func (s *Stream) FormatAndLogF(style color.Style, cacheIncompleteLine bool, format string, a ...interface{}) {
+	if s.IsMuted() {
+		return
+	}
+
 	msg := s.FormatWithStyle(style, format, a...)
 
 	if s.IsLineWrappingEnabled() {
@@ -170,6 +174,10 @@ func (s *Stream) logFBase(format string, a ...interface{}) (int, error) {
 }
 
 func (s *Stream) Write(data []byte) (int, error) {
+	if s.IsMuted() {
+		return len(data), nil
+	}
+
 	return s.Writer.Write(data)
 }
 
