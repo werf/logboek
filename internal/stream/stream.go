@@ -87,6 +87,9 @@ func (s *Stream) ProxyStream() io.Writer {
 }
 
 func (s *Stream) FormatAndLogF(style *stylePkg.Style, format string, a ...interface{}) {
+	s.StateAndModes.mutex.Lock()
+	defer s.StateAndModes.mutex.Unlock()
+
 	msg := s.formatWithStyle(style, format, a...)
 
 	if s.IsLineWrappingEnabled() {
