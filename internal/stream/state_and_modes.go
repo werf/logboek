@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gookit/color"
@@ -13,6 +14,11 @@ import (
 )
 
 type StateAndModes struct {
+	copyable
+	mutex sync.Mutex
+}
+
+type copyable struct {
 	width int
 
 	modes
@@ -599,6 +605,12 @@ func (s *StateAndModes) FormatWithStyle(style color.Style, format string, a ...i
 }
 
 func (s *StateAndModes) clone() *StateAndModes {
+	sClone := &StateAndModes{}
+	sClone.copyable = s.copyable.clone()
+	return sClone
+}
+
+func (s *copyable) clone() copyable {
 	sClone := *s
-	return &sClone
+	return sClone
 }
