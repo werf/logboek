@@ -11,6 +11,9 @@ func (s proxyStream) Write(data []byte) (int, error) {
 		return 0, nil
 	}
 
+	s.StateAndModes.mutex.Lock()
+	defer s.StateAndModes.mutex.Unlock()
+
 	if !s.IsProxyStreamDataFormattingEnabled() {
 		return s.logFBase("%s", string(data))
 	}

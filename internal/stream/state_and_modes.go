@@ -3,6 +3,7 @@ package stream
 import (
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -12,6 +13,11 @@ import (
 )
 
 type StateAndModes struct {
+	copyable
+	mutex sync.Mutex
+}
+
+type copyable struct {
 	width int
 
 	modes
@@ -588,6 +594,12 @@ func (s *StateAndModes) formatWithStyle(style *stylePkg.Style, format string, a 
 }
 
 func (s *StateAndModes) clone() *StateAndModes {
+	sClone := &StateAndModes{}
+	sClone.copyable = s.copyable.clone()
+	return sClone
+}
+
+func (s *copyable) clone() copyable {
 	sClone := *s
-	return &sClone
+	return sClone
 }
