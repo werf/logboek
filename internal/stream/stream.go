@@ -88,6 +88,9 @@ func (s *Stream) FormatAndLogF(style color.Style, cacheIncompleteLine bool, form
 		return
 	}
 
+	s.StateAndModes.mutex.Lock()
+	defer s.StateAndModes.mutex.Unlock()
+
 	msg := s.FormatWithStyle(style, format, a...)
 
 	if s.IsLineWrappingEnabled() {
@@ -177,6 +180,9 @@ func (s *Stream) Write(data []byte) (int, error) {
 	if s.IsMuted() {
 		return len(data), nil
 	}
+
+	s.StateAndModes.mutex.Lock()
+	defer s.StateAndModes.mutex.Unlock()
 
 	return s.Writer.Write(data)
 }
