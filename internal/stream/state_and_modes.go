@@ -98,7 +98,8 @@ type modes struct {
 	isLineWrappingEnabled              bool
 	isProxyStreamDataFormattingEnabled bool
 	isGitlabCollapsibleSectionsEnabled bool
-	isPrefixWithTimeEnabled            bool
+	isPrefixDurationEnabled            bool
+	isPrefixTimeEnabled                bool
 	isLogProcessBorderEnabled          bool
 }
 
@@ -502,35 +503,55 @@ func (s *StateAndModes) formattedTag() string {
 }
 
 type prefixState struct {
-	prefix      string
-	prefixStyle color.Style
-	prefixTime  time.Time
+	prefix                  string
+	prefixStyle             color.Style
+	prefixDurationStartTime time.Time
+	prefixTimeFormat        string
 }
 
 func newPrefixState() prefixState {
 	return prefixState{
-		prefixTime: time.Now(),
+		prefixDurationStartTime: time.Now(),
+		prefixTimeFormat:        time.RFC3339,
 	}
 }
 
-func (s *StateAndModes) EnablePrefixWithTime() {
-	s.isPrefixWithTimeEnabled = true
+func (s *StateAndModes) EnablePrefixDuration() {
+	s.disablePrefix()
+	s.isPrefixDurationEnabled = true
 }
 
-func (s *StateAndModes) DisablePrefixWithTime() {
-	s.isPrefixWithTimeEnabled = false
+func (s *StateAndModes) IsPrefixDurationEnabled() bool {
+	return s.isPrefixDurationEnabled
 }
 
-func (s *StateAndModes) IsPrefixWithTimeEnabled() bool {
-	return s.isPrefixWithTimeEnabled
+func (s *StateAndModes) DisablePrefixDuration() {
+	s.isPrefixDurationEnabled = false
 }
 
-func (s *StateAndModes) ResetPrefixTime() {
-	s.prefixTime = time.Now()
+func (s *StateAndModes) ResetPrefixDurationStartTime() {
+	s.prefixDurationStartTime = time.Now()
+}
+
+func (s *StateAndModes) SetPrefixTimeFormat(format string) {
+	s.prefixTimeFormat = format
+}
+
+func (s *StateAndModes) EnablePrefixTime() {
+	s.disablePrefix()
+	s.isPrefixTimeEnabled = true
+}
+
+func (s *StateAndModes) IsPrefixTimeEnabled() bool {
+	return s.isPrefixTimeEnabled
+}
+
+func (s *StateAndModes) DisablePrefixTime() {
+	s.isPrefixTimeEnabled = false
 }
 
 func (s *StateAndModes) SetPrefix(value string) {
-	s.ResetPrefix()
+	s.disablePrefix()
 	s.prefix = value
 }
 
@@ -538,10 +559,14 @@ func (s *StateAndModes) SetPrefixStyle(style color.Style) {
 	s.prefixStyle = style
 }
 
-func (s *StateAndModes) ResetPrefix() {
+func (s *StateAndModes) DisablePrefix() {
+	s.disablePrefix()
+}
+
+func (s *StateAndModes) disablePrefix() {
 	s.prefix = ""
-	s.prefixStyle = nil
-	s.isPrefixWithTimeEnabled = false
+	s.isPrefixDurationEnabled = false
+	s.isPrefixTimeEnabled = false
 }
 
 func (s *StateAndModes) formattedPrefix() string {
@@ -553,8 +578,9 @@ func (s *StateAndModes) formattedPrefix() string {
 }
 
 func (s *StateAndModes) preparePrefixValue() string {
-	if s.isPrefixWithTimeEnabled {
-		timeString := time.Since(s.prefixTime).String()
+	switch {
+	case s.isPrefixDurationEnabled:
+		timeString := time.Since(s.prefixDurationStartTime).String()
 		timeStringRunes := []rune(timeString)
 		if len(timeStringRunes) > 12 {
 			timeString = string(timeStringRunes[:12])
@@ -564,9 +590,11 @@ func (s *StateAndModes) preparePrefixValue() string {
 
 		timeString += " "
 		return timeString
+	case s.isPrefixTimeEnabled:
+		return time.Now().Format(s.prefixTimeFormat) + " "
+	default:
+		return s.prefix
 	}
-
-	return s.prefix
 }
 
 func (s *StateAndModes) prefixWidth() int {

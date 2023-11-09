@@ -51,13 +51,17 @@ type StreamsInterface interface {
 	SetTagWithStyle(value string, style color.Style)
 	ResetTag()
 
-	EnablePrefixWithTime()
-	DisablePrefixWithTime()
-	IsPrefixWithTimeEnabled() bool
-	ResetPrefixTime()
+	EnablePrefixDuration()
+	DisablePrefixDuration()
+	IsPrefixDurationEnabled() bool
+	ResetPrefixDurationStartTime()
+	SetPrefixTimeFormat(format string)
+	EnablePrefixTime()
+	DisablePrefixTime()
+	IsPrefixTimeEnabled() bool
 	SetPrefix(value string)
 	SetPrefixStyle(style color.Style)
-	ResetPrefix()
+	DisablePrefix()
 
 	EnableLogProcessBorder()
 	DisableLogProcessBorder()
