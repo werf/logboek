@@ -389,7 +389,7 @@ func (s *Stream) shouldGitlabCollapsibleSectionBeClosed() bool {
 }
 
 func (s *Stream) gitlabCollapsibleSectionStart(sectionId, processMsg string) {
-	_, _ = s.logFBase("section_start:%d:%s[collapsed=true]\r\x1b[0K%s\n", time.Now().Unix(), sectionId, processMsg)
+	_, _ = s.logFBase("section_start:%d:%s\r\x1b[0K%s\n", time.Now().Unix(), sectionId, processMsg)
 }
 
 func (s *Stream) gitlabCollapsibleSectionEnd(sectionId string) {
