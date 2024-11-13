@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gookit/color"
@@ -70,7 +71,7 @@ func (s *StateAndModes) SubState() *StateAndModes {
 
 func (s *StateAndModes) SharedState() *StateAndModes {
 	ss := s.clone()
-	ss.isOptionalLnEnabled = false
+	ss.isOptionalLnEnabled.Store(false)
 	ss.State = fitter.State{}
 	ss.cursorState = newCursorState()
 	ss.processState = newProcessState()
@@ -85,7 +86,7 @@ func (s *StateAndModes) DisablePrettyLog() {
 
 type baseState struct {
 	indentWidth         int
-	isOptionalLnEnabled bool
+	isOptionalLnEnabled atomic.Bool
 }
 
 func newBaseState() baseState {
@@ -299,11 +300,11 @@ func (s *StateAndModes) decorateByDoErrorWithIndent(f func() error) func() error
 }
 
 func (s *StateAndModes) EnableOptionalLn() {
-	s.isOptionalLnEnabled = true
+	s.isOptionalLnEnabled.Store(true)
 }
 
 func (s *StateAndModes) DisableOptionalLn() {
-	s.isOptionalLnEnabled = false
+	s.isOptionalLnEnabled.Store(false)
 }
 
 type cursorState struct {
@@ -397,12 +398,13 @@ func (s *StateAndModes) decorateByWithoutLastProcessBorder(decoratedFunc func() 
 }
 
 func (s *StateAndModes) withoutLastProcessBorder(f func() error) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	oldBorderValue := s.processesBorderValues[len(s.processesBorderValues)-1]
 	s.processesBorderValues = s.processesBorderValues[:len(s.processesBorderValues)-1]
 
 	oldBorderFormattedValue := s.processesBorderFormattedValues[len(s.processesBorderFormattedValues)-1]
 	s.processesBorderFormattedValues = s.processesBorderFormattedValues[:len(s.processesBorderFormattedValues)-1]
-
 	err := f()
 
 	s.processesBorderValues = append(s.processesBorderValues, oldBorderValue)
@@ -412,11 +414,15 @@ func (s *StateAndModes) withoutLastProcessBorder(f func() error) error {
 }
 
 func (s *StateAndModes) appendProcessBorder(colorlessValue string, style color.Style) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.processesBorderValues = append(s.processesBorderValues, colorlessValue)
 	s.processesBorderFormattedValues = append(s.processesBorderFormattedValues, s.FormatWithStyle(style, colorlessValue))
 }
 
 func (s *StateAndModes) popProcessBorder() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if len(s.processesBorderValues) == 0 {
 		return
 	}
@@ -604,7 +610,7 @@ func (s *StateAndModes) prefixWidth() int {
 func (s *StateAndModes) processOptionalLn() string {
 	var result string
 
-	if s.isOptionalLnEnabled {
+	if s.isOptionalLnEnabled.Load() {
 		result += s.processService()
 		result += "\n"
 
