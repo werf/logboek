@@ -1,11 +1,10 @@
-logboek — библиотека для организации структурированного и информативного вывода
-_______________________________________________________________________________
+## logboek — a library for structured and informative output
 
-## Логер, каналы логирования и потоки вывода
+### Logger, channels, and streams
 
 <img src="https://github.com/werf/logboek/blob/master/logger.png?raw=true">
 
-При создании логера необходимо указать **стримы**, `OutStream` и `ErrStream`, которые должны подходить под интерфейс `io.Writer` (это может быть файл, стандартные потоки вывода, буфер или произвольная имплементация):
+When creating a logger, you need to specify the **streams**, `OutStream` and `ErrStream`, which must adhere to the `io.Writer` interface (this can be a file, standard output streams, a buffer, or any custom implementation):
 
 ```go
 import "github.com/werf/logboek"
@@ -14,15 +13,15 @@ import "github.com/werf/logboek"
 l := logboek.NewLogger(os.Stdout, os.Stderr)
 ```
 
-Настройки стримов позволяют задать параметры оформления, такие как префикс и тег, а также различные режимы работы. Они являются общими для `OutStream` и `ErrStream`, и, соответственно, для всех каналов, о которых пойдёт речь далее.
+Stream settings allow you to define formatting parameters such as prefix and tag, as well as various modes of operation. These settings apply to both `OutStream` and `ErrStream`, and consequently to all channels that will be discussed later.
 
 ```go
 l.Streams()
 ```
 
-Логер связан с **каналами логирования** `Error`, `Warn`, `Default`, `Info` и `Debug`. При использовании каналов `Error` и `Warn` все сообщения пишутся в `ErrStream`, а в случае с остальными в `OutStream`.
+The logger is connected to the **log channels** `Error`, `Warn`, `Default`, `Info`, and `Debug`. When using the `Error` and `Warn` channels, all messages are written to `ErrStream`, while for the others, they go to `OutStream`.
 
-Каналы логирования позволяют организовать вывод для различных режимов работы приложения (подробный и дебаг режимы), ветвление и выполнение кода в случае того или иного активного канала (активация канала также включает вывод в нижестоящих каналах по приоритету):
+Log channels allow you to organize the output for various application modes (verbose and debug modes), branch execution, and control flow depending on the active channel (activating a channel also triggers output to lower-priority channels):
 
 ```go
 import (
@@ -39,14 +38,14 @@ case "quiet":
     l.SetAcceptedLevel(level.Error)  
 }
 
-... 
+...
 
 if l.Debug().IsAccepted() {
   ... // do and print something special
 }
 ```
 
-Если каналы не требуются, то можно ограничиться использованием канала `Default`, методы которого доступны на верхнем уровне логера:
+If channels are not required, you can simply use the `Default` channel, whose methods are available at the top level of the logger:
 
 ```go
 l.LogLn() // l.Default().LogLn()
@@ -55,14 +54,14 @@ l.LogF()  // l.Default().LogF()
 ```
 
 <!---
-- Ширина терминала
-- Наследование настроек
-- Прокси
+- Terminal width
+- Inherited settings
+- Proxy
 -->
 
-## Default Logger
+### Default logger
 
-По умолчанию библиотека инициализирует `DefaultLogger` с предустановленными стримами `os.Stdout` и `os.Stderr`. Для работы с логером можно использовать сам экземпляр или верхнеуровневые функции библиотеки, которые соответствуют всем доступным методам логера:
+By default, the library initializes the `DefaultLogger` with preset streams `os.Stdout` and `os.Stderr`. You can interact with the logger using the instance itself or the high-level library functions that correspond to all available logger methods:
 
 ```go
 import "github.com/werf/logboek"
@@ -76,7 +75,7 @@ logboek.Streams() // logboek.DefaultLogger().Streams()
 ```
 
 <!---
-## Методы логирования
+## Logging Methods
 
 <img align="right" src="https://github.com/werf/logboek/blob/master/logboek.png?raw=true">
 -->
