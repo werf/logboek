@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/gookit/color"
 
@@ -18,6 +19,7 @@ type Logger struct {
 	levelManager              map[level.Level]*Manager
 	outStream                 *stream.Stream
 	errStream                 *stream.Stream
+	errStreamRedirection      []level.Level
 	commonStreamStateAndModes *stream.StateAndModes
 }
 
@@ -27,6 +29,7 @@ func NewLogger(outStream, errStream io.Writer) *Logger {
 	l.commonStreamStateAndModes = stream.NewStreamState()
 	l.outStream = stream.NewStream(outStream, l.commonStreamStateAndModes)
 	l.errStream = stream.NewStream(errStream, l.commonStreamStateAndModes)
+	l.SetErrorStreamRedirection(level.Error, level.Warn)
 	l.initLevelManager()
 
 	return l
@@ -51,8 +54,12 @@ func (l *Logger) getLevelManager(lvl level.Level) *Manager {
 	return l.levelManager[lvl]
 }
 
+func (l *Logger) SetErrorStreamRedirection(lvl ...level.Level) {
+	l.errStreamRedirection = lvl
+}
+
 func (l *Logger) GetLevelStream(lvl level.Level) *stream.Stream {
-	if lvl == level.Error || lvl == level.Warn {
+	if slices.Contains(l.errStreamRedirection, lvl) {
 		return l.errStream
 	} else {
 		return l.outStream
@@ -123,6 +130,7 @@ func (l *Logger) NewSubLogger(outStream, errStream io.Writer) types.LoggerInterf
 	subLogger := NewLogger(outStream, errStream)
 	subLogger.setCommonStreamState(l.commonStreamStateAndModes.SubState())
 	subLogger.SetAcceptedLevel(l.acceptedLevel)
+	subLogger.SetErrorStreamRedirection(l.errStreamRedirection...)
 
 	for lvl, manager := range l.levelManager {
 		subLogger.levelManager[lvl].style = manager.style

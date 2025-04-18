@@ -29,6 +29,7 @@ type LoggerInterface interface {
 	Streams() StreamsInterface
 	OutStream() io.Writer
 	ErrStream() io.Writer
+	SetErrorStreamRedirection(lvl ...level.Level)
 
 	NewSubLogger(outStream, errStream io.Writer) LoggerInterface
 	GetStreamsSettingsFrom(l LoggerInterface)
