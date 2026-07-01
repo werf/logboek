@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestSequence_NewSequence(t *testing.T) {
@@ -325,6 +326,42 @@ func TestSequenceStack_Slice(t *testing.T) {
 					}
 				}
 
+			}
+		})
+	}
+}
+
+// TestSequence_Slice_multibyteRuneBoundary pins the reported corruption bug.
+// maxTWidth is a rune count; the buggy Slice cut content[:maxTWidth] by BYTE,
+// splitting a multibyte glyph mid-sequence and yielding invalid UTF-8 that
+// terminals render as U+FFFD (�). Against the unfixed code this fails on
+// both the invalid-UTF-8 check and the rune-count check.
+func TestSequence_Slice_multibyteRuneBoundary(t *testing.T) {
+	const maxTWidth = 3
+	tests := []struct{ name, data string }{
+		{"cyrillic", strings.Repeat("я", 6)},   // 2 bytes/rune
+		{"emojiShip", strings.Repeat("🛳", 6)}, // 4 bytes/rune
+		{"cjk", strings.Repeat("漢", 6)},        // 3 bytes/rune
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := newSequence(test.data)
+			s.SetKind(plainSequenceKind)
+
+			head, rest := s.Slice(maxTWidth)
+
+			if rest != 0 {
+				t.Fatalf("rest: expected 0, got %d", rest)
+			}
+			if !utf8.ValidString(head) {
+				t.Errorf("sliced head is not valid UTF-8 (mid-rune cut): %q", head)
+			}
+			if !utf8.ValidString(s.String()) {
+				t.Errorf("sliced tail is not valid UTF-8 (mid-rune cut): %q", s.String())
+			}
+			if n := utf8.RuneCountInString(head); n != maxTWidth {
+				t.Errorf("head rune count: expected %d, got %d (%q)", maxTWidth, n, head)
 			}
 		})
 	}
