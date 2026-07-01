@@ -2,3 +2,7 @@
 *.pyc
 _logboek.h
 _logboek.so
+.DS_Store
+.idea/
+.pi/
+.pp/
