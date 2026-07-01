@@ -93,21 +93,24 @@ func (s *sequence) Slice(maxTWidth int) (string, int) {
 	content := s.content()
 	difference := maxTWidth - s.TWidth()
 	if difference <= 0 {
-		// ponytail: byte index, matches pre-fix behavior (KNOWN-INCORRECT for non-ASCII)
-		result := content[:maxTWidth]
 		isASCII := s.twidth == len(content) // byte==rune => pure ASCII view
-		s.off += maxTWidth
 		if isASCII {
-			// ASCII fast-path: byte==rune so this is exact and O(1); the tail
-			// of an ASCII string is ASCII, so the cache stays valid across cuts
-			// and countrunes leaves the hot loop.
+			// ASCII fast-path: byte==rune so cutting at maxTWidth is exact and O(1);
+			// the tail of an ASCII string is ASCII, so the cache stays valid.
+			result := content[:maxTWidth]
+			s.off += maxTWidth
 			s.twidth -= maxTWidth
-		} else {
-			// multibyte: recount exactly next TWidth() (bit-for-bit old behavior,
-			// incl. mid-rune orphan-fragment counting).
-			s.twValid = false
+			return result, 0
 		}
-		return result, 0
+		// multibyte: cut on a rune boundary so emoji/wide chars never split mid-byte.
+		byteLen := 0
+		for i := 0; i < maxTWidth; i++ {
+			_, size := utf8.DecodeRuneInString(content[byteLen:])
+			byteLen += size
+		}
+		s.off += byteLen
+		s.twValid = false
+		return content[:byteLen], 0
 	}
 
 	s.off = len(s.str)

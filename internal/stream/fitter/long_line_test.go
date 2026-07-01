@@ -87,17 +87,20 @@ func TestFitText_longInputPreservesControlSemantics(t *testing.T) {
 	})
 }
 
-// KNOWN-INCORRECT: sequence.Slice slices by byte index after TWidth counts
-// runes, so non-ASCII long words split at the wrong boundary (11 two-byte
-// runes at width 10 wraps after 5 runes, not 10). This is out of scope to fix
-// here; the assertion documents current behavior so a future fix visibly
-// breaks it rather than silently changing output.
-func TestFitText_unicodeLongWordCharacterization(t *testing.T) {
+// sequence.Slice cuts on rune boundaries: 11 two-byte runes at width 10 wrap
+// after 10 runes, and multibyte glyphs (emoji, CJK, Cyrillic) never split
+// mid-byte into replacement chars.
+func TestFitText_unicodeLongWord(t *testing.T) {
 	runFitTextTests(t, "%s", false, []fitTextTest{
 		{
-			"cyrillicByteIndexSplit",
+			"cyrillicRuneBoundarySplit",
 			strings.Repeat("я", 11),
-			"яяяяя\nяяяяяя",
+			"яяяяяяяяяя\nя",
+		},
+		{
+			"emojiNotSplitMidByte",
+			strings.Repeat("🛳", 11),
+			"🛳🛳🛳🛳🛳🛳🛳🛳🛳🛳\n🛳",
 		},
 	})
 }
