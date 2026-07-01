@@ -1,6 +1,9 @@
 package fitter
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 type sequenceKind int
 
@@ -9,9 +12,21 @@ const (
 	controlSequenceKind
 )
 
+// sequence holds one run of text. It has two lifecycle phases that never
+// interleave (verified: wrapperState.Apply always resets the stack after
+// Slices, so a sequence is either being built OR being sliced, never both):
+//   - BUILD: per-rune Append into the strings.Builder (amortized O(1), keeps
+//     phase 1 / PR #77 from regressing to O(n²) concat).
+//   - SLICE: materialize the Builder to str ONCE (zero-copy), then advance a
+//     byte offset off for each Slice (O(1), no tail copy) with a cached twidth.
 type sequence struct {
-	data strings.Builder
-	kind sequenceKind
+	data    strings.Builder // build-phase accumulator
+	str     string          // slice-phase view, materialized once from data
+	strSet  bool            // str materialized this cycle
+	off     int             // byte offset into str
+	twidth  int             // cached rune width of str[off:]
+	twValid bool
+	kind    sequenceKind
 }
 
 func newSequence(data string) *sequence {
@@ -22,14 +37,33 @@ func newSequence(data string) *sequence {
 	return s
 }
 
+// content returns the current logical content, materializing the build buffer
+// on first read of the slice phase and reading str[off:] thereafter.
+func (s *sequence) content() string {
+	if !s.strSet {
+		s.str = s.data.String() // zero-copy in Go >=1.10
+		s.strSet = true
+	}
+	return s.str[s.off:]
+}
+
 func (s *sequence) Append(data string) {
+	if s.off != 0 { // ponytail: Append never follows Slice (verified); assert to catch future misuse
+		panic("sequence: Append after Slice")
+	}
 	s.data.WriteString(data)
+	s.strSet = false
+	s.twValid = false
 }
 
 // setData replaces the buffer contents (Builder has no in-place truncate).
 func (s *sequence) setData(data string) {
 	s.data.Reset()
 	s.data.WriteString(data)
+	s.str = ""
+	s.strSet = false
+	s.off = 0
+	s.twValid = false
 }
 
 func (s *sequence) SetKind(kind sequenceKind) {
@@ -37,40 +71,55 @@ func (s *sequence) SetKind(kind sequenceKind) {
 }
 
 func (s *sequence) String() string {
-	return s.data.String()
+	return s.content()
 }
 
 func (s *sequence) TWidth() int {
 	if s.kind == controlSequenceKind {
-		if s.data.String() == "\b" {
+		if s.content() == "\b" {
 			return -1
 		}
 		return 0
 	}
 
-	return len([]rune(s.data.String()))
+	if !s.twValid {
+		s.twidth = utf8.RuneCountInString(s.content())
+		s.twValid = true
+	}
+	return s.twidth
 }
 
 func (s *sequence) Slice(maxTWidth int) (string, int) {
-	var result string
-	var rest int
-
-	data := s.data.String()
+	content := s.content()
 	difference := maxTWidth - s.TWidth()
 	if difference <= 0 {
-		result = data[:maxTWidth] // ponytail: byte index, matches pre-fix behavior (KNOWN-INCORRECT for non-ASCII)
-		s.setData(data[maxTWidth:])
-		rest = 0
-	} else {
-		result = data
-		s.setData("")
-		rest = difference
+		// ponytail: byte index, matches pre-fix behavior (KNOWN-INCORRECT for non-ASCII)
+		result := content[:maxTWidth]
+		isASCII := s.twidth == len(content) // byte==rune => pure ASCII view
+		s.off += maxTWidth
+		if isASCII {
+			// ASCII fast-path: byte==rune so this is exact and O(1); the tail
+			// of an ASCII string is ASCII, so the cache stays valid across cuts
+			// and countrunes leaves the hot loop.
+			s.twidth -= maxTWidth
+		} else {
+			// multibyte: recount exactly next TWidth() (bit-for-bit old behavior,
+			// incl. mid-rune orphan-fragment counting).
+			s.twValid = false
+		}
+		return result, 0
 	}
 
-	return result, rest
+	s.off = len(s.str)
+	s.twidth = 0
+	s.twValid = true
+	return content, difference
 }
 
 func (s *sequence) IsEmpty() bool {
+	if s.strSet {
+		return s.off >= len(s.str)
+	}
 	return s.data.Len() == 0
 }
 
