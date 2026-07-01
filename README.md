@@ -74,6 +74,25 @@ logboek.Streams() // logboek.DefaultLogger().Streams()
 ...
 ```
 
+### Using logboek with context.Context
+
+Logboek can propagate a logger through `context.Context`:
+
+```go
+ctx := logboek.NewContext(context.Background(), myLogger)
+
+// Inside a helper function
+logboek.Context(ctx).LogLn("hello from helper")
+```
+
+`logboek.Context(ctx)` is **safe**: if the provided context does not hold a logger (or is `nil`/`context.Background()`), it automatically falls back to `logboek.DefaultLogger()`.
+
+If you need the original strict behaviour (panic when no logger found), call `logboek.MustContext(ctx)` instead.
+
+```go
+// Will panic if ctx has no logger
+l := logboek.MustContext(ctx)
+```
 <!---
 ## Logging Methods
 
