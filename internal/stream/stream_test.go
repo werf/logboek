@@ -11,7 +11,7 @@ import (
 // newWrappingStream builds a Stream over buf with line wrapping enabled and a
 // fixed width, so ContentWidth()/ServiceWidth() are deterministic across
 // environments (no prefix/process/tag/indent => ServiceWidth == 0 =>
-// ContentWidth == width). Style is nil (no SGR decoration).
+// ContentWidth == width). Callers pass style per FormatAndLogF call.
 func newWrappingStream(buf io.Writer, width int) *Stream {
 	s := NewStream(buf, NewStreamState())
 	s.EnableLineWrapping()
