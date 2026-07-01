@@ -111,8 +111,8 @@ func TestSequence_Slice(t *testing.T) {
 				t.Errorf("\n[EXPECTED]: %d\n[GOT]: %d", test.rest, rest)
 			}
 
-			if test.newData != s.data {
-				t.Errorf("\n[EXPECTED]: %s\n[GOT]: %s", test.newData, s.data)
+			if test.newData != s.String() {
+				t.Errorf("\n[EXPECTED]: %s\n[GOT]: %s", test.newData, s.String())
 			}
 		})
 	}

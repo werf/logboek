@@ -10,20 +10,26 @@ const (
 )
 
 type sequence struct {
-	data string
+	data strings.Builder
 	kind sequenceKind
 }
 
 func newSequence(data string) *sequence {
 	s := &sequence{}
-	s.data = data
+	s.data.WriteString(data)
 	s.kind = plainSequenceKind
 
 	return s
 }
 
 func (s *sequence) Append(data string) {
-	s.data += data
+	s.data.WriteString(data)
+}
+
+// setData replaces the buffer contents (Builder has no in-place truncate).
+func (s *sequence) setData(data string) {
+	s.data.Reset()
+	s.data.WriteString(data)
 }
 
 func (s *sequence) SetKind(kind sequenceKind) {
@@ -31,32 +37,33 @@ func (s *sequence) SetKind(kind sequenceKind) {
 }
 
 func (s *sequence) String() string {
-	return s.data
+	return s.data.String()
 }
 
 func (s *sequence) TWidth() int {
 	if s.kind == controlSequenceKind {
-		if s.data == "\b" {
+		if s.data.String() == "\b" {
 			return -1
 		}
 		return 0
 	}
 
-	return len([]rune(s.data))
+	return len([]rune(s.data.String()))
 }
 
 func (s *sequence) Slice(maxTWidth int) (string, int) {
 	var result string
 	var rest int
 
+	data := s.data.String()
 	difference := maxTWidth - s.TWidth()
 	if difference <= 0 {
-		result = s.data[:maxTWidth]
-		s.data = s.data[maxTWidth:]
+		result = data[:maxTWidth] // ponytail: byte index, matches pre-fix behavior (KNOWN-INCORRECT for non-ASCII)
+		s.setData(data[maxTWidth:])
 		rest = 0
 	} else {
-		result = s.data
-		s.data = ""
+		result = data
+		s.setData("")
 		rest = difference
 	}
 
@@ -64,7 +71,7 @@ func (s *sequence) Slice(maxTWidth int) (string, int) {
 }
 
 func (s *sequence) IsEmpty() bool {
-	return len(s.data) == 0
+	return s.data.Len() == 0
 }
 
 type sequenceStack struct {
@@ -76,12 +83,12 @@ func newSequenceStack() sequenceStack {
 }
 
 func (ss *sequenceStack) String() string {
-	var result string
+	var b strings.Builder
 	for _, s := range ss.sequences {
-		result += s.String()
+		b.WriteString(s.String())
 	}
 
-	return result
+	return b.String()
 }
 
 func (ss *sequenceStack) TWidth() int {
@@ -140,13 +147,13 @@ func (ss *sequenceStack) DivideLastSign() {
 		panic("empty sequence stack")
 	}
 
-	data := ss.TopSequence().data
+	data := ss.TopSequence().String()
 	if len(data) == 0 {
 		panic("empty top sequence")
 	}
 
 	sign := data[len(data)-1]
-	ss.TopSequence().data = data[:len(data)-1]
+	ss.TopSequence().setData(data[:len(data)-1])
 
 	ss.CommitTopSequenceAsPlain()
 	ss.WriteData(string(sign))
@@ -179,14 +186,14 @@ func (ss *sequenceStack) IsEmpty() bool {
 }
 
 func (ss *sequenceStack) Slice(sliceTWidth int) (string, int) {
-	var result string
 	var newSequences []*sequence
 
 	rest := sliceTWidth
 
+	var b strings.Builder
 	for ind, s := range ss.sequences {
 		if s.TWidth() == 0 {
-			result += s.String()
+			b.WriteString(s.String())
 			continue
 		}
 
@@ -201,7 +208,7 @@ func (ss *sequenceStack) Slice(sliceTWidth int) (string, int) {
 
 			var part string
 			part, rest = s.Slice(rest)
-			result += part
+			b.WriteString(part)
 
 			if !s.IsEmpty() {
 				newSequences = append(newSequences, ss.sequences[ind:]...)
@@ -210,6 +217,7 @@ func (ss *sequenceStack) Slice(sliceTWidth int) (string, int) {
 		}
 	}
 
+	result := b.String()
 	ss.sequences = newSequences
 	if len(ss.sequences) == 0 {
 		ss.NewSequence("")

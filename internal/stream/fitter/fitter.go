@@ -179,19 +179,18 @@ func contentWidthWithoutMarkSign(contentWidth int, markWrappedLine bool) int {
 }
 
 func FitText(text string, s *State, contentWidth int, markWrappedLine bool, cacheIncompleteLine bool) string {
-	var result string
+	var b strings.Builder
 
 	for _, r := range []rune(text) {
-		result += runFitterWrapper(r, s, contentWidth, markWrappedLine)
+		b.WriteString(runFitterWrapper(r, s, contentWidth, markWrappedLine))
 		ignoreControlSequenceTWidth(r, s)
 	}
 
 	if !cacheIncompleteLine {
-		result += s.wrapperState.Apply(contentWidth, markWrappedLine)
+		b.WriteString(s.wrapperState.Apply(contentWidth, markWrappedLine))
 	}
 
-	result = addRequiredColorControlSequences(result, s)
-	return result
+	return addRequiredColorControlSequences(b.String(), s)
 }
 
 func runFitterWrapper(r rune, s *State, contentWidth int, markWrappedLine bool) string {
@@ -264,26 +263,26 @@ func processFitterControlSequence(r rune, s *State, processEscapeSequenceCodeFun
 }
 
 func addRequiredColorControlSequences(fittedText string, s *State) string {
-	var result string
+	var b strings.Builder
 
 	for _, r := range []rune(fittedText) {
 		switch string(r) {
 		case "\n", "\r":
 			if string(s.prevCursorRune) == "\r" {
-				result += string(r)
+				b.WriteRune(r)
 			} else {
 				if s.isColorLine {
-					result += resetColorControlSequence
+					b.WriteString(resetColorControlSequence)
 				}
 
-				result += string(r)
+				b.WriteRune(r)
 			}
 		default:
 			if string(s.prevCursorRune) == "\r" || string(s.prevCursorRune) == "\n" {
-				result += s.generateColorControlSequence()
+				b.WriteString(s.generateColorControlSequence())
 			}
 
-			result += string(r)
+			b.WriteRune(r)
 		}
 
 		s.prevCursorRune = r
@@ -297,7 +296,7 @@ func addRequiredColorControlSequences(fittedText string, s *State) string {
 		processFitterControlSequence(r, s, nil, processControlSequenceFunc)
 	}
 
-	return result
+	return b.String()
 }
 
 func processColorControlSequence(s *State) {

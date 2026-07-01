@@ -127,19 +127,19 @@ func (s *Stream) processAndLogFBase(format string, a ...interface{}) (int, error
 		msg = format
 	}
 
-	var formattedMsg string
+	var b strings.Builder
 	for _, r := range []rune(msg) {
 		switch string(r) {
 		case "\r", "\n":
-			formattedMsg += s.processNewLineAndRemoveCarriage(string(r))
+			b.WriteString(s.processNewLineAndRemoveCarriage(string(r)))
 		default:
-			formattedMsg += s.processDefault()
+			b.WriteString(s.processDefault())
 		}
 
-		formattedMsg += string(r)
+		b.WriteRune(r)
 	}
 
-	return s.logFBase("%s", formattedMsg)
+	return s.logFBase("%s", b.String())
 }
 
 func (s *Stream) processNewLineAndRemoveCarriage(carriage string) string {
